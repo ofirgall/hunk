@@ -5,7 +5,7 @@
   "type": "module",
   "packageManager": "bun@1.3.10",
   "bin": {
-    "hunk": "./dist/npm/main.js"
+    "hunk": "dist/npm/main.js"
   },
   "files": [
     "dist/npm",
