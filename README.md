@@ -1,58 +1,100 @@
 # hunk
 
-Hunk is a desktop-inspired terminal diff viewer for understanding AI-authored changesets in Bun + TypeScript with OpenTUI.
+Hunk is a terminal diff viewer for reviewing agent-authored changesets with a desktop-style UI.
 
-## Requirements
-
-- Bun
-- Zig
+- full-screen multi-file review stream
+- split, stacked, and responsive auto layouts
+- keyboard and mouse navigation
+- optional agent rationale beside annotated hunks
+- Git pager and difftool integration
 
 ## Install
 
 ```bash
-bun install
+npm i -g hunkdiff
 ```
 
-## Run
+For now, the published `hunk` executable still expects [Bun](https://bun.sh) 1.3.10+ to be available on your `PATH` at runtime.
+
+## Quick start
+
+Review your current working tree:
 
 ```bash
-bun run src/main.tsx -- diff
-```
-
-## Standalone binary
-
-Build a local executable:
-
-```bash
-bun run build:bin
-./dist/hunk diff
-```
-
-Install it into `~/.local/bin`:
-
-```bash
-bun run install:bin
-hunk
 hunk diff
 ```
 
-If you want a different install location, set `HUNK_INSTALL_DIR` before running the install script.
+Review staged changes:
 
-## Workflows
+```bash
+hunk diff --staged
+```
 
-- `hunk` — print standard CLI help with the most common commands
-- `hunk diff` — review local working tree changes in the full Hunk UI
-- `hunk diff --staged` / `hunk diff --cached` — review staged changes in the full Hunk UI
+Review a commit:
+
+```bash
+hunk show HEAD~1
+```
+
+Compare two files directly:
+
+```bash
+hunk diff before.ts after.ts
+```
+
+Open a patch from stdin:
+
+```bash
+git diff --no-color | hunk patch -
+```
+
+## Feature comparison
+
+| Capability | hunk | difftastic | delta | diff |
+| --- | --- | --- | --- | --- |
+| Dedicated interactive review UI | ✅ | ❌ | ❌ | ❌ |
+| Multi-file review stream with navigation sidebar | ✅ | ❌ | ❌ | ❌ |
+| Agent / AI rationale sidecar | ✅ | ❌ | ❌ | ❌ |
+| Split diffs | ✅ | ✅ | ✅ | ✅ |
+| Stacked diffs | ✅ | ✅ | ✅ | ✅ |
+| Auto responsive layouts | ✅ | ❌ | ❌ | ❌ |
+| Themes | ✅ | ❌ | ✅ | ❌ |
+| Syntax highlighting | ✅ | ✅ | ✅ | ❌ |
+| Syntax-aware / structural diffing | ❌ | ✅ | ❌ | ❌ |
+| Mouse support inside the diff viewer | ✅ | ❌ | ❌ | ❌ |
+| Runtime toggles for wrapping / line numbers / hunk metadata | ✅ | ❌ | ❌ | ❌ |
+| Pager-compatible mode | ✅ | ✅ | ✅ | ✅ |
+
+## Benchmarks
+
+Quick local timing snapshot from one Linux machine on the same 120-line TypeScript file pair. Metric: time until a changed marker first became visible.
+
+| Tool | Avg first-visible changed output |
+| --- | ---: |
+| `diff` | ~37 ms |
+| `delta --paging=never` | ~35 ms |
+| `hunk diff` | ~219 ms |
+| `difft --display side-by-side` | ~266 ms |
+
+Takeaway:
+
+- `diff` and `delta` are fastest here because they print plain diff text and exit.
+- `hunk` spends more startup time on an interactive UI, syntax highlighting, navigation state, and optional agent context.
+- `difftastic` spends more startup time on structural diffing.
+
+## Common workflows
+
+- `hunk` — print CLI help
+- `hunk diff` — review working tree changes
+- `hunk diff --staged` / `hunk diff --cached` — review staged changes
 - `hunk diff <ref>` — review changes versus a branch, tag, or commit-ish
-- `hunk diff <ref1>..<ref2>` / `hunk diff <ref1>...<ref2>` — review common Git ranges
-- `hunk diff -- <pathspec...>` — review only selected paths
-- `hunk show [ref]` — review the last commit or a given ref in the full Hunk UI
-- `hunk stash show [ref]` — review a stash entry in the full Hunk UI
-- `hunk diff <left> <right>` — compare two concrete files directly
-- `hunk patch [file|-]` — review a patch file or stdin, including pager mode
-- `hunk pager` — act as a general Git pager wrapper, opening Hunk for diff-like stdin and falling back to normal text paging otherwise
+- `hunk diff <ref1>..<ref2>` / `hunk diff <ref1>...<ref2>` — review Git ranges
+- `hunk diff -- <pathspec...>` — limit review to selected paths
+- `hunk show [ref]` — review the last commit or a specific ref
+- `hunk stash show [ref]` — review a stash entry
+- `hunk patch [file|-]` — review a patch file or stdin
+- `hunk pager` — act as a Git pager wrapper, opening Hunk for diff-like stdin and falling back to plain text paging otherwise
 - `hunk difftool <left> <right> [path]` — integrate with Git difftool
-- `hunk git [range]` — legacy alias for the original Git-style diff entrypoint
 
 ## Interaction
 
@@ -70,6 +112,38 @@ If you want a different install location, set `HUNK_INSTALL_DIR` before running 
 - `tab` cycle focus regions
 - `q` or `Esc` quit
 
+## Git integration
+
+Use Hunk directly for full-screen review:
+
+```bash
+hunk diff
+hunk diff --staged
+hunk diff main...feature
+hunk show
+hunk stash show
+```
+
+Use Hunk as a pager for `git diff` and `git show`:
+
+```bash
+git config --global core.pager 'hunk patch -'
+```
+
+Or scope it just to diff/show:
+
+```bash
+git config --global pager.diff 'hunk patch -'
+git config --global pager.show 'hunk patch -'
+```
+
+Use Hunk as a Git difftool:
+
+```bash
+git config --global diff.tool hunk
+git config --global difftool.hunk.cmd 'hunk difftool "$LOCAL" "$REMOTE" "$MERGED"'
+```
+
 ## Configuration
 
 Hunk reads layered TOML config with this precedence:
@@ -77,11 +151,9 @@ Hunk reads layered TOML config with this precedence:
 1. built-in defaults
 2. global config: `$XDG_CONFIG_HOME/hunk/config.toml` or `~/.config/hunk/config.toml`
 3. repo-local config: `.hunk/config.toml`
-4. command-specific sections like `[git]`, `[diff]`, `[show]`, `[stash-show]`, `[patch]`, `[difftool]`
+4. command-specific sections like `[diff]`, `[show]`, `[stash-show]`, `[patch]`, `[difftool]`
 5. `[pager]` when Hunk is running in pager mode
 6. explicit CLI flags
-
-When you change persistent view settings inside Hunk, it writes them back to `.hunk/config.toml` in the current repo when possible, or to the global config file outside a repo.
 
 Example:
 
@@ -101,16 +173,7 @@ line_numbers = false
 mode = "split"
 ```
 
-CLI overrides are available when you want one-off or pager-specific behavior:
-
-```bash
-hunk diff --mode split --line-numbers
-hunk show HEAD~1 --theme paper
-hunk patch - --mode stack --no-line-numbers
-hunk diff before.ts after.ts --theme paper --wrap
-```
-
-Supported persistent CLI overrides:
+Supported one-off CLI overrides:
 
 - `--mode <auto|split|stack>`
 - `--theme <theme>`
@@ -119,11 +182,11 @@ Supported persistent CLI overrides:
 - `--hunk-headers` / `--no-hunk-headers`
 - `--agent-notes` / `--no-agent-notes`
 
-## Agent sidecar format
+## Agent context sidecar
 
 Use `--agent-context <file>` to load a JSON sidecar and show agent rationale next to the diff.
 
-The order of `files` in the sidecar is significant. Hunk uses that order for the sidebar and main review stream so an agent can tell a story instead of relying on raw patch order.
+The order of `files` in the sidecar is significant. Hunk uses that order for the sidebar and the main review stream so an agent can present a review narrative instead of raw patch order.
 
 ```json
 {
@@ -142,130 +205,40 @@ The order of `files` in the sidecar is significant. Hunk uses that order for the
           "confidence": "high"
         }
       ]
-    },
-    {
-      "path": "src/ui/App.tsx",
-      "summary": "Presents the new workflow after the loader changes.",
-      "annotations": [
-        {
-          "newRange": [90, 136],
-          "summary": "Uses the normalized model in the review shell.",
-          "rationale": "The reader should inspect this after understanding the loader changes.",
-          "tags": ["ui"],
-          "confidence": "medium"
-        }
-      ]
     }
   ]
 }
 ```
 
-Files omitted from the sidecar keep their original diff order and appear after the explicitly ordered files.
-
-## Codex workflow
-
-For Codex-driven changes, keep a transient sidecar at `.hunk/latest.json` and load it during review:
+For local agent-driven review, keep a transient sidecar at `.hunk/latest.json` and load it with:
 
 ```bash
 hunk diff --agent-context .hunk/latest.json
 ```
 
-Suggested pattern:
+## Development
 
-- Codex makes code changes.
-- Codex refreshes `.hunk/latest.json` with a concise changeset summary, file summaries, and hunk-level rationale.
-- You open `hunk diff`, `hunk diff --staged`, or `hunk show <ref>` with that sidecar.
-
-Keep the sidecar concise. It should explain why a hunk exists, what risk to review, and how the files fit together. It should not narrate obvious syntax edits line by line.
-
-## Comparison
-
-### Feature comparison
-
-| Capability | hunk | difftastic | delta | diff |
-| --- | --- | --- | --- | --- |
-| Dedicated interactive review UI | ✅ | ❌ | ❌ | ❌ |
-| Multi-file review stream with navigation sidebar | ✅ | ❌ | ❌ | ❌ |
-| Agent / AI rationale sidecar | ✅ | ❌ | ❌ | ❌ |
-| Split diffs | ✅ | ✅ | ✅ | ✅ |
-| Stacked diffs | ✅ | ✅ | ✅ | ✅ |
-| Auto responsive layouts | ✅ | ❌ | ❌ | ❌ |
-| Themes | ✅ | ❌ | ✅ | ❌ |
-| Syntax highlighting | ✅ | ✅ | ✅ | ❌ |
-| Syntax-aware / structural diffing | ❌ | ✅ | ❌ | ❌ |
-| Mouse support inside the diff viewer | ✅ | ❌ | ❌ | ❌ |
-| Runtime toggles for wrapping / line numbers / hunk metadata | ✅ | ❌ | ❌ | ❌ |
-| Pager-compatible mode | ✅ | ✅ | ✅ | ✅ |
-
-### Local timing snapshot
-
-These numbers are **not a universal benchmark**. They are a quick local comparison from one Linux machine using tmux panes, measuring **time until a changed marker first became visible** on the same 120-line TypeScript file pair.
-
-Commands used:
-
-- `hunk diff before.ts after.ts`
-- `difft --display side-by-side before.ts after.ts`
-- `delta --paging=never before.ts after.ts`
-- `diff -u before.ts after.ts`
-
-| Tool | Avg first-visible changed output |
-| --- | ---: |
-| `diff` | ~37 ms |
-| `delta --paging=never` | ~35 ms |
-| `hunk diff` | ~219 ms |
-| `difft --display side-by-side` | ~266 ms |
-
-Interpretation:
-
-- `diff` and `delta` are fastest here because they emit plain diff text and exit.
-- `hunk` pays extra startup cost for an interactive terminal UI, syntax highlighting, navigation state, and optional agent context.
-- `difftastic` pays extra cost for syntax-aware / structural diffing.
-- For larger review sessions, Hunk is optimized for **navigating and understanding** a changeset, not just dumping the quickest possible patch text.
-
-## Git integration
-
-For full-screen review, you can invoke Hunk directly with Git-shaped commands:
+Install dependencies:
 
 ```bash
-hunk diff
-hunk diff --staged
-hunk diff main...feature
-hunk show
-hunk show HEAD~1
-hunk stash show
+bun install
 ```
 
-Use Hunk as the default Git pager when you want it to behave like a normal pager under `git diff` / `git show`:
+Validate a change:
 
 ```bash
-git config --global core.pager 'hunk patch -'
+bun run typecheck
+bun test
+bun run test:tty-smoke
 ```
 
-Or scope it just to `git diff` and `git show`:
+Build the npm runtime bundle used for publishing:
 
 ```bash
-git config --global pager.diff 'hunk patch -'
-git config --global pager.show 'hunk patch -'
+bun run build:npm
+bun run check:pack
 ```
 
-When Hunk reads a patch from stdin, it automatically switches to pager-style chrome, strips Git's color escape sequences before parsing, and binds keyboard input to the controlling terminal so it works correctly as a Git pager.
+## License
 
-Then:
-
-```bash
-git diff
-git show HEAD
-```
-
-If you want Git to launch Hunk as a difftool for file-to-file comparisons:
-
-```bash
-git config --global diff.tool hunk
-git config --global difftool.hunk.cmd 'hunk difftool "$LOCAL" "$REMOTE" "$MERGED"'
-```
-e comparisons:
-
-```bash
-git config --global diff.tool hunk
-git config --global difftool.hunk.cmd 'hunk difftool "$LOCAL" "$REMOTE" "$MERGED"'
-```
+[MIT](LICENSE)
