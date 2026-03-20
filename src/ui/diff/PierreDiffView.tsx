@@ -205,7 +205,12 @@ function renderInlineSpans(
   return (
     <>
       {trimmed.map((span, index) => (
-        <span key={`${keyPrefix}:${index}`} fg={span.fg ?? fallbackColor} bg={span.bg ?? fallbackBg}>
+        <span
+          key={`${keyPrefix}:${index}`}
+          fg={span.fg ?? fallbackColor}
+          bg={span.bg ?? fallbackBg}
+          attributes={span.attributes ?? 0}
+        >
           {span.text}
         </span>
       ))}
@@ -255,7 +260,12 @@ function wrapSpans(spans: RenderSpan[], width: number) {
         text,
       };
       const previous = current.at(-1);
-      if (previous && previous.fg === nextSpan.fg && previous.bg === nextSpan.bg) {
+      if (
+        previous &&
+        previous.fg === nextSpan.fg &&
+        previous.bg === nextSpan.bg &&
+        (previous.attributes ?? 0) === (nextSpan.attributes ?? 0)
+      ) {
         previous.text += nextSpan.text;
       } else {
         current.push(nextSpan);

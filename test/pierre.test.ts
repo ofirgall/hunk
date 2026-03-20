@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { TextAttributes } from "@opentui/core";
 import { parseDiffFromFile } from "@pierre/diffs";
 import type { DiffFile } from "../src/core/types";
 import { buildSplitRows, buildStackRows, loadHighlightedDiff, type DiffRow } from "../src/ui/diff/pierre";
@@ -87,6 +88,16 @@ describe("Pierre diff rows", () => {
     expect(changedRow.right.spans.some((span) => span.text.includes("42"))).toBe(true);
     expect(changedRow.left.spans.some((span) => span.bg === theme.removedContentBg)).toBe(true);
     expect(changedRow.right.spans.some((span) => span.bg === theme.addedContentBg)).toBe(true);
+    expect(
+      changedRow.left.spans.some(
+        (span) => span.text.includes("41") && (span.attributes ?? 0) === (TextAttributes.BOLD | TextAttributes.UNDERLINE),
+      ),
+    ).toBe(true);
+    expect(
+      changedRow.right.spans.some(
+        (span) => span.text.includes("42") && (span.attributes ?? 0) === (TextAttributes.BOLD | TextAttributes.UNDERLINE),
+      ),
+    ).toBe(true);
     expect(changedRow.right.spans.some((span) => span.text.includes("export") && typeof span.fg === "string")).toBe(true);
   });
 

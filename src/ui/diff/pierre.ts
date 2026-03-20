@@ -1,3 +1,4 @@
+import { TextAttributes } from "@opentui/core";
 import {
   cleanLastNewline,
   getHighlighterOptions,
@@ -65,6 +66,7 @@ export interface RenderSpan {
   text: string;
   fg?: string;
   bg?: string;
+  attributes?: number;
 }
 
 export interface SplitLineCell {
@@ -161,14 +163,19 @@ function normalizeHighlightedColor(color: string | undefined, theme: AppTheme) {
   return theme.syntaxColors[reserved];
 }
 
-/** Append a span while coalescing adjacent runs with identical colors. */
+/** Append a span while coalescing adjacent runs with identical styling. */
 function mergeSpan(target: RenderSpan[], next: RenderSpan) {
   if (next.text.length === 0) {
     return;
   }
 
   const previous = target.at(-1);
-  if (previous && previous.fg === next.fg && previous.bg === next.bg) {
+  if (
+    previous &&
+    previous.fg === next.fg &&
+    previous.bg === next.bg &&
+    (previous.attributes ?? 0) === (next.attributes ?? 0)
+  ) {
     previous.text += next.text;
     return;
   }
@@ -185,8 +192,9 @@ function flattenHighlightedLine(
 ) {
   const spans: RenderSpan[] = [];
   const colorVariable = theme.appearance === "light" ? "--diffs-token-light" : "--diffs-token-dark";
+  const emphasisAttributes = TextAttributes.BOLD | TextAttributes.UNDERLINE;
 
-  const visit = (current: HastNode | undefined, inherited: Pick<RenderSpan, "fg" | "bg">) => {
+  const visit = (current: HastNode | undefined, inherited: Pick<RenderSpan, "fg" | "bg" | "attributes">) => {
     if (!current) {
       return;
     }
@@ -196,17 +204,20 @@ function flattenHighlightedLine(
         text: tabify(current.value),
         fg: inherited.fg,
         bg: inherited.bg,
+        attributes: inherited.attributes,
       });
       return;
     }
 
     const properties = current.properties ?? {};
     const styles = parseStyleValue(properties.style);
-    const nextStyle: Pick<RenderSpan, "fg" | "bg"> = {
+    const isDiffSpan = Object.hasOwn(properties, "data-diff-span");
+    const nextStyle: Pick<RenderSpan, "fg" | "bg" | "attributes"> = {
       // Newer Pierre output can emit direct `color:#...` styles instead of theme CSS variables.
       fg: normalizeHighlightedColor(styles.get(colorVariable) ?? styles.get("color") ?? inherited.fg, theme),
       // Pierre marks inline word-diff emphasis spans with a data attribute rather than a separate row kind.
-      bg: Object.hasOwn(properties, "data-diff-span") ? emphasisBg : inherited.bg,
+      bg: isDiffSpan ? emphasisBg : inherited.bg,
+      attributes: isDiffSpan ? (inherited.attributes ?? 0) | emphasisAttributes : inherited.attributes,
     };
 
     for (const child of current.children ?? []) {

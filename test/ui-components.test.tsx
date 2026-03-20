@@ -1,4 +1,5 @@
 import { describe, expect, test } from "bun:test";
+import { TextAttributes } from "@opentui/core";
 import { testRender } from "@opentui/react/test-utils";
 import { parseDiffFromFile } from "@pierre/diffs";
 import { act, createRef, type ReactNode } from "react";
@@ -138,7 +139,7 @@ async function captureFrame(node: ReactNode, width = 120, height = 24) {
 }
 
 function frameHasHighlightedMarker(
-  frame: { lines: Array<{ spans: Array<{ text: string; fg?: unknown; bg?: unknown }> }> },
+  frame: { lines: Array<{ spans: Array<{ text: string; fg?: unknown; bg?: unknown; attributes?: number }> }> },
   marker: string,
 ) {
   return frame.lines.some((line) => {
@@ -150,6 +151,14 @@ function frameHasHighlightedMarker(
 
     return line.spans.some((span) => span.text.includes(marker) && span.text.trim().length < text.trim().length);
   });
+}
+
+function frameHasEmphasizedMarker(
+  frame: { lines: Array<{ spans: Array<{ text: string; attributes?: number }> }> },
+  marker: string,
+) {
+  const emphasisAttributes = TextAttributes.BOLD | TextAttributes.UNDERLINE;
+  return frame.lines.some((line) => line.spans.some((span) => span.text.includes(marker) && (span.attributes ?? 0) === emphasisAttributes));
 }
 
 describe("UI components", () => {
@@ -541,7 +550,9 @@ describe("UI components", () => {
         await secondSetup.renderOnce();
       });
 
-      expect(frameHasHighlightedMarker(secondSetup.captureSpans(), "cacheMarker")).toBe(true);
+      const frame = secondSetup.captureSpans();
+      expect(frameHasHighlightedMarker(frame, "cacheMarker")).toBe(true);
+      expect(frameHasEmphasizedMarker(frame, "2")).toBe(true);
     } finally {
       await act(async () => {
         secondSetup.renderer.destroy();
