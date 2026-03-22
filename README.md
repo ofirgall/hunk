@@ -25,22 +25,22 @@ Requirements:
 - Node.js 18+
 - Git is recommended for most workflows
 
-## First run
+## Basic usage
 
 ```bash
-hunk           # show help
-hunk --version # show the installed version
-hunk diff      # review current repo changes
-hunk show      # review the latest commit
+hunk                                # show help
+hunk --version                      # show the installed version
+hunk diff before.ts after.ts        # compare two files directly
+git diff --no-color | hunk patch -  # review a patch from stdin
 ```
 
-## Next things to try
+### Working with Git
 
 ```bash
+hunk diff         # review current repo changes
 hunk diff --staged
-hunk show HEAD~1
-hunk diff before.ts after.ts
-git diff --no-color | hunk patch -
+hunk show         # review the latest commit
+hunk show HEAD~1  # review an earlier commit
 ```
 
 ## Feature comparison
@@ -94,14 +94,9 @@ git config --global difftool.hunk.cmd 'hunk difftool "$LOCAL" "$REMOTE" "$MERGED
 
 ## Examples
 
-Want a quick demo from the repo itself? See [`examples/`](examples/README.md).
+Ready-to-run demo diffs live in [`examples/`](examples/README.md).
 
-It includes:
-
-- a tiny first-run TypeScript diff
-- a realistic multi-file refactor review
-- an agent-rationale walkthrough with `--agent-context`
-- a pager-navigation tour for `↑`, `↓`, paging, and hunk jumps
+Each example includes the exact command to run from the repository root.
 
 ## Advanced features
 
