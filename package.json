@@ -28,6 +28,7 @@
     "test:tty-smoke": "HUNK_RUN_TTY_SMOKE=1 bun test test/tty-render-smoke.test.ts",
     "check:pack": "bun run ./scripts/check-pack.ts",
     "check:prebuilt-pack": "bun run ./scripts/check-prebuilt-pack.ts",
+    "check:security-audit": "bun run ./scripts/check-security-audit.ts",
     "smoke:prebuilt-install": "bun run ./scripts/smoke-prebuilt-install.ts",
     "publish:prebuilt:npm": "bun run ./scripts/publish-prebuilt-npm.ts",
     "prepack": "bun run build:npm",

@@ -41,6 +41,12 @@ bun run build:npm
 bun run check:pack
 ```
 
+Run the security audit check with the current allowlist:
+
+```bash
+bun run check:security-audit
+```
+
 Build and smoke-test the prebuilt npm packages for the current host:
 
 ```bash
@@ -90,6 +96,7 @@ Key rules:
 - Update docs and examples when behavior or workflows change.
 - If you change this repo locally, refresh `.hunk/latest.json` for review, but do not commit it.
 - If newly created files should appear in `hunk diff` before commit, use `git add -N <paths>`.
+- Dependency review and the security audit workflow should stay low-noise. If a finding is real and currently unavoidable, update the audit allowlist with a short rationale instead of silently ignoring it.
 
 ## Release notes
 

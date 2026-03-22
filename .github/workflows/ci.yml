@@ -5,6 +5,9 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+
 concurrency:
   group: main-ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
