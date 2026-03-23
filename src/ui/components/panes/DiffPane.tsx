@@ -1,6 +1,6 @@
 import type { ScrollBoxRenderable } from "@opentui/core";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useState, type RefObject } from "react";
-import type { AgentAnnotation, DiffFile, LayoutMode } from "../../../core/types";
+import type { DiffFile, LayoutMode } from "../../../core/types";
 import type { VisibleAgentNote } from "../../lib/agentAnnotations";
 import { measureDiffSectionMetrics } from "../../lib/sectionHeights";
 import { diffHunkId, diffSectionId } from "../../lib/ids";
@@ -12,9 +12,7 @@ const EMPTY_VISIBLE_AGENT_NOTES: VisibleAgentNote[] = [];
 
 /** Render the main multi-file review stream. */
 export function DiffPane({
-  activeAnnotations,
   diffContentWidth,
-  dismissedAgentNoteIds,
   files,
   headerLabelWidth,
   headerStatsWidth,
@@ -30,13 +28,10 @@ export function DiffPane({
   wrapLines,
   theme,
   width,
-  onDismissAgentNote,
   onOpenAgentNotesAtHunk,
   onSelectFile,
 }: {
-  activeAnnotations: AgentAnnotation[];
   diffContentWidth: number;
-  dismissedAgentNoteIds: string[];
   files: DiffFile[];
   headerLabelWidth: number;
   headerStatsWidth: number;
@@ -52,7 +47,6 @@ export function DiffPane({
   wrapLines: boolean;
   theme: AppTheme;
   width: number;
-  onDismissAgentNote: (id: string) => void;
   onOpenAgentNotesAtHunk: (fileId: string, hunkIndex: number) => void;
   onSelectFile: (fileId: string) => void;
 }) {
@@ -100,25 +94,27 @@ export function DiffPane({
   const visibleAgentNotesByFile = useMemo(() => {
     const next = new Map<string, VisibleAgentNote[]>();
 
-    if (!showAgentNotes || !selectedFileId) {
+    if (!showAgentNotes) {
       return next;
     }
 
-    const dismissedIdSet = new Set(dismissedAgentNoteIds);
-    const visibleNotes = activeAnnotations
-      .map((annotation, index) => ({
-        id: `annotation:${selectedFileId}:${selectedHunkIndex}:${index}`,
-        annotation,
-      }))
-      .filter((note) => !dismissedIdSet.has(note.id));
+    files.forEach((file) => {
+      const annotations = file.agent?.annotations ?? [];
+      if (annotations.length === 0) {
+        return;
+      }
 
-    // Notes only render for the currently selected file/hunk so they stay spatially anchored.
-    if (visibleNotes.length > 0) {
-      next.set(selectedFileId, visibleNotes);
-    }
+      next.set(
+        file.id,
+        annotations.map((annotation, index) => ({
+          id: `annotation:${file.id}:${annotation.id ?? index}`,
+          annotation,
+        })),
+      );
+    });
 
     return next;
-  }, [activeAnnotations, dismissedAgentNoteIds, selectedFileId, selectedHunkIndex, showAgentNotes]);
+  }, [files, showAgentNotes]);
 
   // Keep exact row rendering for wrapped lines and visible notes; otherwise reserve
   // offscreen section height and only materialize rows near the viewport.
@@ -191,9 +187,7 @@ export function DiffPane({
     return next;
   }, [adjacentPrefetchFileIds, selectedFileId, visibleViewportFileIds, windowingEnabled]);
 
-  const selectedFileIndex = selectedFileId
-    ? files.findIndex((file) => file.id === selectedFileId)
-    : -1;
+  const selectedFileIndex = selectedFileId ? files.findIndex((file) => file.id === selectedFileId) : -1;
   const selectedFile = selectedFileIndex >= 0 ? files[selectedFileIndex] : undefined;
   const selectedAnchorId = selectedFile
     ? selectedFile.metadata.hunks[selectedHunkIndex]
@@ -217,10 +211,7 @@ export function DiffPane({
     top += 1;
 
     if (selectedFile.metadata.hunks.length > 0) {
-      const clampedHunkIndex = Math.max(
-        0,
-        Math.min(selectedHunkIndex, selectedFile.metadata.hunks.length - 1),
-      );
+      const clampedHunkIndex = Math.max(0, Math.min(selectedHunkIndex, selectedFile.metadata.hunks.length - 1));
       top += sectionMetrics[selectedFileIndex]?.hunkAnchorRows.get(clampedHunkIndex) ?? 0;
     }
 
@@ -292,14 +283,7 @@ export function DiffPane({
           verticalScrollbarOptions={{ visible: false }}
           horizontalScrollbarOptions={{ visible: false }}
         >
-          <box
-            style={{
-              width: "100%",
-              flexDirection: "column",
-              position: "relative",
-              overflow: "visible",
-            }}
-          >
+          <box style={{ width: "100%", flexDirection: "column", overflow: "visible" }}>
             {files.map((file, index) => {
               const shouldRenderSection = visibleWindowedFileIds?.has(file.id) ?? true;
               const shouldPrefetchVisibleHighlight =
@@ -321,9 +305,7 @@ export function DiffPane({
                     adjacentPrefetchFileIds.has(file.id) ||
                     shouldPrefetchVisibleHighlight
                   }
-                  onHighlightReady={
-                    file.id === selectedFileId ? handleSelectedHighlightReady : undefined
-                  }
+                  onHighlightReady={file.id === selectedFileId ? handleSelectedHighlightReady : undefined}
                   separatorWidth={separatorWidth}
                   showSeparator={index > 0}
                   showLineNumbers={showLineNumbers}
@@ -331,10 +313,7 @@ export function DiffPane({
                   wrapLines={wrapLines}
                   theme={theme}
                   viewWidth={diffContentWidth}
-                  visibleAgentNotes={
-                    visibleAgentNotesByFile.get(file.id) ?? EMPTY_VISIBLE_AGENT_NOTES
-                  }
-                  onDismissAgentNote={onDismissAgentNote}
+                  visibleAgentNotes={visibleAgentNotesByFile.get(file.id) ?? EMPTY_VISIBLE_AGENT_NOTES}
                   onOpenAgentNotesAtHunk={(hunkIndex) => onOpenAgentNotesAtHunk(file.id, hunkIndex)}
                   onSelect={() => onSelectFile(file.id)}
                 />
