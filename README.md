@@ -71,17 +71,17 @@ Open Hunk in another window, then ask your agent to leave comments.
 
 ## Feature comparison
 
-| Capability                         | hunk | difftastic | delta | diff-so-fancy | diff |
-| ---------------------------------- | ---- | ---------- | ----- | ------------- | ---- |
-| Review-first interactive UI        | ✅   | ❌         | ❌    | ❌            | ❌   |
-| Multi-file review stream + sidebar | ✅   | ❌         | ❌    | ❌            | ❌   |
-| Inline agent / AI annotations      | ✅   | ❌         | ❌    | ❌            | ❌   |
-| Responsive auto split/stack layout | ✅   | ❌         | ❌    | ❌            | ❌   |
-| Mouse support inside the viewer    | ✅   | ❌         | ❌    | ❌            | ❌   |
-| Runtime view toggles               | ✅   | ❌         | ❌    | ❌            | ❌   |
-| Syntax highlighting                | ✅   | ✅         | ✅    | ❌            | ❌   |
-| Structural diffing                 | ❌   | ✅         | ❌    | ❌            | ❌   |
-| Pager-compatible mode              | ✅   | ✅         | ✅    | ✅            | ✅   |
+| Capability                         | hunk | lumen | difftastic | delta | diff-so-fancy | diff |
+| ---------------------------------- | ---- | ----- | ---------- | ----- | ------------- | ---- |
+| Review-first interactive UI        | ✅   | ✅    | ❌         | ❌    | ❌            | ❌   |
+| Multi-file review stream + sidebar | ✅   | ✅    | ❌         | ❌    | ❌            | ❌   |
+| Inline agent / AI annotations      | ✅   | ❌    | ❌         | ❌    | ❌            | ❌   |
+| Responsive auto split/stack layout | ✅   | ❌    | ❌         | ❌    | ❌            | ❌   |
+| Mouse support inside the viewer    | ✅   | ✅    | ❌         | ❌    | ❌            | ❌   |
+| Runtime view toggles               | ✅   | ✅    | ❌         | ❌    | ❌            | ❌   |
+| Syntax highlighting                | ✅   | ✅    | ✅         | ✅    | ❌            | ❌   |
+| Structural diffing                 | ❌   | ❌    | ✅         | ❌    | ❌            | ❌   |
+| Pager-compatible mode              | ✅   | ❌    | ✅         | ✅    | ✅            | ✅   |
 
 Hunk is optimized for reviewing a full changeset interactively.
 
