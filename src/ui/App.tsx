@@ -874,6 +874,7 @@ function AppShell({
             activeMenuItemIndex={activeMenuItemIndex}
             activeMenuSpec={activeMenuSpec}
             activeMenuWidth={activeMenuWidth}
+            terminalWidth={terminal.width}
             theme={activeTheme}
             onHoverItem={setActiveMenuItemIndex}
             onSelectItem={(entry) => {
