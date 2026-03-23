@@ -22,26 +22,40 @@ interface SelectedInlineNote {
 }
 
 /** Check whether a rendered diff row visually covers the note anchor line. */
-function rowMatchesNote(row: Extract<DiffRow, { type: "split-line" | "stack-line" }>, annotation: AgentAnnotation) {
+function rowMatchesNote(
+  row: Extract<DiffRow, { type: "split-line" | "stack-line" }>,
+  annotation: AgentAnnotation,
+) {
   const anchor = annotationAnchor(annotation);
   if (!anchor) {
     return false;
   }
 
   if (row.type === "split-line") {
-    return anchor.side === "new" ? row.right.lineNumber === anchor.lineNumber : row.left.lineNumber === anchor.lineNumber;
+    return anchor.side === "new"
+      ? row.right.lineNumber === anchor.lineNumber
+      : row.left.lineNumber === anchor.lineNumber;
   }
 
-  return anchor.side === "new" ? row.cell.newLineNumber === anchor.lineNumber : row.cell.oldLineNumber === anchor.lineNumber;
+  return anchor.side === "new"
+    ? row.cell.newLineNumber === anchor.lineNumber
+    : row.cell.oldLineNumber === anchor.lineNumber;
 }
 
 /** Check whether one rendered diff row falls inside the annotation range on either side. */
-function rowOverlapsAnnotation(row: Extract<DiffRow, { type: "split-line" | "stack-line" }>, annotation: AgentAnnotation) {
+function rowOverlapsAnnotation(
+  row: Extract<DiffRow, { type: "split-line" | "stack-line" }>,
+  annotation: AgentAnnotation,
+) {
   const matchesOld =
     annotation.oldRange &&
     (row.type === "split-line"
-      ? row.left.lineNumber !== undefined && row.left.lineNumber >= annotation.oldRange[0] && row.left.lineNumber <= annotation.oldRange[1]
-      : row.cell.oldLineNumber !== undefined && row.cell.oldLineNumber >= annotation.oldRange[0] && row.cell.oldLineNumber <= annotation.oldRange[1]);
+      ? row.left.lineNumber !== undefined &&
+        row.left.lineNumber >= annotation.oldRange[0] &&
+        row.left.lineNumber <= annotation.oldRange[1]
+      : row.cell.oldLineNumber !== undefined &&
+        row.cell.oldLineNumber >= annotation.oldRange[0] &&
+        row.cell.oldLineNumber <= annotation.oldRange[1]);
 
   if (matchesOld) {
     return true;
@@ -49,17 +63,26 @@ function rowOverlapsAnnotation(row: Extract<DiffRow, { type: "split-line" | "sta
 
   return Boolean(
     annotation.newRange &&
-      (row.type === "split-line"
-        ? row.right.lineNumber !== undefined && row.right.lineNumber >= annotation.newRange[0] && row.right.lineNumber <= annotation.newRange[1]
-        : row.cell.newLineNumber !== undefined && row.cell.newLineNumber >= annotation.newRange[0] && row.cell.newLineNumber <= annotation.newRange[1]),
+    (row.type === "split-line"
+      ? row.right.lineNumber !== undefined &&
+        row.right.lineNumber >= annotation.newRange[0] &&
+        row.right.lineNumber <= annotation.newRange[1]
+      : row.cell.newLineNumber !== undefined &&
+        row.cell.newLineNumber >= annotation.newRange[0] &&
+        row.cell.newLineNumber <= annotation.newRange[1]),
   );
 }
 
 /** Resolve the rendered diff row before which the visible inline note should appear. */
-function findInlineNoteAnchorRow(rows: DiffRow[], annotation: AgentAnnotation, selectedHunkIndex: number) {
+function findInlineNoteAnchorRow(
+  rows: DiffRow[],
+  annotation: AgentAnnotation,
+  selectedHunkIndex: number,
+) {
   const selectedHunkRows = rows.filter((row) => row.hunkIndex === selectedHunkIndex);
   const lineRows = selectedHunkRows.filter(
-    (row): row is Extract<DiffRow, { type: "split-line" | "stack-line" }> => row.type === "split-line" || row.type === "stack-line",
+    (row): row is Extract<DiffRow, { type: "split-line" | "stack-line" }> =>
+      row.type === "split-line" || row.type === "stack-line",
   );
   const headerRow = selectedHunkRows.find((row) => row.type === "hunk-header");
 
@@ -67,7 +90,11 @@ function findInlineNoteAnchorRow(rows: DiffRow[], annotation: AgentAnnotation, s
 }
 
 /** Return the one visible note, plus the diff rows that should show its guide rail. */
-function buildSelectedInlineNote(rows: DiffRow[], visibleAgentNotes: VisibleAgentNote[], selectedHunkIndex: number) {
+function buildSelectedInlineNote(
+  rows: DiffRow[],
+  visibleAgentNotes: VisibleAgentNote[],
+  selectedHunkIndex: number,
+) {
   if (visibleAgentNotes.length === 0 || selectedHunkIndex < 0) {
     return null;
   }
@@ -80,14 +107,18 @@ function buildSelectedInlineNote(rows: DiffRow[], visibleAgentNotes: VisibleAgen
 
   const selectedHunkLineRows = rows.filter(
     (row): row is Extract<DiffRow, { type: "split-line" | "stack-line" }> =>
-      row.hunkIndex === selectedHunkIndex && (row.type === "split-line" || row.type === "stack-line"),
+      row.hunkIndex === selectedHunkIndex &&
+      (row.type === "split-line" || row.type === "stack-line"),
   );
-  const coveredRows = selectedHunkLineRows.filter((row) => rowOverlapsAnnotation(row, note.annotation));
+  const coveredRows = selectedHunkLineRows.filter((row) =>
+    rowOverlapsAnnotation(row, note.annotation),
+  );
   const fallbackGuideRow =
     anchorRow.type === "split-line" || anchorRow.type === "stack-line"
       ? anchorRow
       : selectedHunkLineRows[0];
-  const guideRows = coveredRows.length > 0 ? coveredRows : fallbackGuideRow ? [fallbackGuideRow] : [];
+  const guideRows =
+    coveredRows.length > 0 ? coveredRows : fallbackGuideRow ? [fallbackGuideRow] : [];
   const endGuideAfterKey = guideRows.at(-1)?.key ?? anchorRow.key;
 
   return {
@@ -143,7 +174,12 @@ export function PierreDiffView({
   });
 
   const rows = useMemo(
-    () => (file ? (layout === "split" ? buildSplitRows(file, resolvedHighlighted, theme) : buildStackRows(file, resolvedHighlighted, theme)) : []),
+    () =>
+      file
+        ? layout === "split"
+          ? buildSplitRows(file, resolvedHighlighted, theme)
+          : buildStackRows(file, resolvedHighlighted, theme)
+        : [],
     [file, layout, resolvedHighlighted, theme],
   );
   const hunkAnchorIds = useMemo(() => {
@@ -209,7 +245,11 @@ export function PierreDiffView({
                 noteIndex={selectedInlineNote.noteIndex}
                 theme={theme}
                 width={width}
-                onClose={onDismissAgentNote ? () => onDismissAgentNote(selectedInlineNote.note.id) : undefined}
+                onClose={
+                  onDismissAgentNote
+                    ? () => onDismissAgentNote(selectedInlineNote.note.id)
+                    : undefined
+                }
               />
             ) : null}
             <DiffRowView
@@ -227,7 +267,11 @@ export function PierreDiffView({
               onOpenAgentNotesAtHunk={onOpenAgentNotesAtHunk}
             />
             {showGuideCap && selectedInlineNote?.anchorSide ? (
-              <AgentInlineNoteGuideCap side={selectedInlineNote.anchorSide} theme={theme} width={width} />
+              <AgentInlineNoteGuideCap
+                side={selectedInlineNote.anchorSide}
+                theme={theme}
+                width={width}
+              />
             ) : null}
           </Fragment>
         );

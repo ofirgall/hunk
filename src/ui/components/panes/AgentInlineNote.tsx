@@ -57,13 +57,22 @@ export function AgentInlineNote({
       ? splitWidths.leftWidth
       : Math.max(34, width - 4);
   const boxWidth = clamp(preferredDockWidth, 28, Math.max(28, width - 4));
-  const boxLeft = canDockRight ? Math.max(0, width - boxWidth) : canDockLeft ? 0 : Math.min(4, Math.max(0, width - boxWidth));
+  const boxLeft = canDockRight
+    ? Math.max(0, width - boxWidth)
+    : canDockLeft
+      ? 0
+      : Math.min(4, Math.max(0, width - boxWidth));
   const innerWidth = Math.max(1, boxWidth - 2);
   const titleWidth = Math.max(1, innerWidth - (closeText ? closeText.length + 1 : 0));
   const bodyWidth = innerWidth;
   const lines: AgentInlineNoteLine[] = [
     ...wrapText(annotation.summary, bodyWidth).map((text) => ({ kind: "summary" as const, text })),
-    ...(annotation.rationale ? wrapText(annotation.rationale, bodyWidth).map((text) => ({ kind: "rationale" as const, text })) : []),
+    ...(annotation.rationale
+      ? wrapText(annotation.rationale, bodyWidth).map((text) => ({
+          kind: "rationale" as const,
+          text,
+        }))
+      : []),
   ];
   const topBorder = `┌${"─".repeat(Math.max(0, boxWidth - 2))}┐`;
   const bottomBorder =
@@ -80,7 +89,9 @@ export function AgentInlineNote({
           <text>{" ".repeat(boxLeft)}</text>
         </box>
         <box style={{ width: boxWidth, height: 1, backgroundColor: theme.panel }}>
-          <text fg={theme.noteBorder} bg={theme.noteBackground}>{topBorder}</text>
+          <text fg={theme.noteBorder} bg={theme.noteBackground}>
+            {topBorder}
+          </text>
         </box>
       </box>
 
@@ -89,28 +100,42 @@ export function AgentInlineNote({
           <text>{" ".repeat(boxLeft)}</text>
         </box>
         <box style={{ width: 1, height: 1, backgroundColor: theme.panel }}>
-          <text fg={theme.noteBorder} bg={theme.noteBackground}>│</text>
+          <text fg={theme.noteBorder} bg={theme.noteBackground}>
+            │
+          </text>
         </box>
         <box style={{ width: titleWidth, height: 1, backgroundColor: theme.panel }}>
-          <text fg={theme.noteTitleText} bg={theme.noteTitleBackground}>{padText(fitText(titleText, titleWidth), titleWidth)}</text>
+          <text fg={theme.noteTitleText} bg={theme.noteTitleBackground}>
+            {padText(fitText(titleText, titleWidth), titleWidth)}
+          </text>
         </box>
         {closeText ? (
-          <box onMouseUp={onClose} style={{ width: closeText.length + 1, height: 1, backgroundColor: theme.panel }}>
+          <box
+            onMouseUp={onClose}
+            style={{ width: closeText.length + 1, height: 1, backgroundColor: theme.panel }}
+          >
             <text fg={theme.noteTitleText} bg={theme.noteTitleBackground}>{` ${closeText}`}</text>
           </box>
         ) : null}
         <box style={{ width: 1, height: 1, backgroundColor: theme.panel }}>
-          <text fg={theme.noteBorder} bg={theme.noteBackground}>│</text>
+          <text fg={theme.noteBorder} bg={theme.noteBackground}>
+            │
+          </text>
         </box>
       </box>
 
       {lines.map((line, index) => (
-        <box key={`${line.kind}:${index}`} style={{ width: "100%", height: 1, flexDirection: "row", backgroundColor: theme.panel }}>
+        <box
+          key={`${line.kind}:${index}`}
+          style={{ width: "100%", height: 1, flexDirection: "row", backgroundColor: theme.panel }}
+        >
           <box style={{ width: boxLeft, height: 1, backgroundColor: theme.panel }}>
             <text>{" ".repeat(boxLeft)}</text>
           </box>
           <box style={{ width: 1, height: 1, backgroundColor: theme.panel }}>
-            <text fg={theme.noteBorder} bg={theme.noteBackground}>│</text>
+            <text fg={theme.noteBorder} bg={theme.noteBackground}>
+              │
+            </text>
           </box>
           <box style={{ width: bodyWidth, height: 1, backgroundColor: theme.panel }}>
             <text fg={line.kind === "summary" ? theme.text : theme.muted} bg={theme.noteBackground}>
@@ -118,7 +143,9 @@ export function AgentInlineNote({
             </text>
           </box>
           <box style={{ width: 1, height: 1, backgroundColor: theme.panel }}>
-            <text fg={theme.noteBorder} bg={theme.noteBackground}>│</text>
+            <text fg={theme.noteBorder} bg={theme.noteBackground}>
+              │
+            </text>
           </box>
         </box>
       ))}
@@ -128,24 +155,32 @@ export function AgentInlineNote({
           <text>{" ".repeat(boxLeft)}</text>
         </box>
         <box style={{ width: boxWidth, height: 1, backgroundColor: theme.panel }}>
-          <text fg={theme.noteBorder} bg={theme.noteBackground}>{bottomBorder}</text>
+          <text fg={theme.noteBorder} bg={theme.noteBackground}>
+            {bottomBorder}
+          </text>
         </box>
       </box>
 
       {(anchorSide === "new" || anchorSide === "old") && layout === "split" ? (
-        <box style={{ width: "100%", height: 1, flexDirection: "row", backgroundColor: theme.panel }}>
+        <box
+          style={{ width: "100%", height: 1, flexDirection: "row", backgroundColor: theme.panel }}
+        >
           {anchorSide === "old" ? (
             <>
               <box style={{ width: 1, height: 1, backgroundColor: theme.panel }}>
                 <text fg={theme.noteBorder}>│</text>
               </box>
-              <box style={{ width: Math.max(0, width - 1), height: 1, backgroundColor: theme.panel }}>
+              <box
+                style={{ width: Math.max(0, width - 1), height: 1, backgroundColor: theme.panel }}
+              >
                 <text>{" ".repeat(Math.max(0, width - 1))}</text>
               </box>
             </>
           ) : (
             <>
-              <box style={{ width: Math.max(0, width - 1), height: 1, backgroundColor: theme.panel }}>
+              <box
+                style={{ width: Math.max(0, width - 1), height: 1, backgroundColor: theme.panel }}
+              >
                 <text>{" ".repeat(Math.max(0, width - 1))}</text>
               </box>
               <box style={{ width: 1, height: 1, backgroundColor: theme.panel }}>

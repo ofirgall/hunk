@@ -13,10 +13,17 @@ const { AgentInlineNote } = await import("../src/ui/components/panes/AgentInline
 const { DiffPane } = await import("../src/ui/components/panes/DiffPane");
 const { MenuDropdown } = await import("../src/ui/components/chrome/MenuDropdown");
 const { StatusBar } = await import("../src/ui/components/chrome/StatusBar");
-const { DiffSectionPlaceholder } = await import("../src/ui/components/panes/DiffSectionPlaceholder");
+const { DiffSectionPlaceholder } =
+  await import("../src/ui/components/panes/DiffSectionPlaceholder");
 const { PierreDiffView } = await import("../src/ui/diff/PierreDiffView");
 
-function createDiffFile(id: string, path: string, before: string, after: string, withAgent = false): DiffFile {
+function createDiffFile(
+  id: string,
+  path: string,
+  before: string,
+  after: string,
+  withAgent = false,
+): DiffFile {
   const metadata = parseDiffFromFile(
     {
       name: path,
@@ -87,8 +94,20 @@ function createBootstrap(): AppBootstrap {
       summary: "Patch summary",
       agentSummary: "Changeset summary",
       files: [
-        createDiffFile("alpha", "alpha.ts", "export const alpha = 1;\n", "export const alpha = 2;\nexport const add = true;\n", true),
-        createDiffFile("beta", "beta.ts", "export const beta = 1;\n", "export const betaValue = 1;\n", false),
+        createDiffFile(
+          "alpha",
+          "alpha.ts",
+          "export const alpha = 1;\n",
+          "export const alpha = 2;\nexport const add = true;\n",
+          true,
+        ),
+        createDiffFile(
+          "beta",
+          "beta.ts",
+          "export const beta = 1;\n",
+          "export const betaValue = 1;\n",
+          false,
+        ),
       ],
     },
     initialMode: "split",
@@ -168,7 +187,9 @@ function frameHasHighlightedMarker(
       return false;
     }
 
-    return line.spans.some((span) => span.text.includes(marker) && span.text.trim().length < text.trim().length);
+    return line.spans.some(
+      (span) => span.text.includes(marker) && span.text.trim().length < text.trim().length,
+    );
   });
 }
 
@@ -253,7 +274,10 @@ describe("UI components", () => {
       12,
     );
 
-    const lines = frame.split("\n").slice(0, 8).map((line) => line.trimEnd());
+    const lines = frame
+      .split("\n")
+      .slice(0, 8)
+      .map((line) => line.trimEnd());
     expect(lines[0]).toBe("┌────────────────────────────────┐");
     expect(lines[1]).toContain("AI note");
     expect(lines[2]).toContain("Annotation for alpha.ts");
@@ -324,7 +348,9 @@ describe("UI components", () => {
     expect(frame).toContain("AI note · ▶ new 2");
     expect(frame).toContain("Annotation for alpha.ts");
     expect(frame).toContain("Why alpha.ts changed");
-    expect(frame.indexOf("AI note · ▶ new 2")).toBeLessThan(frame.indexOf("2 + export const add = true;"));
+    expect(frame.indexOf("AI note · ▶ new 2")).toBeLessThan(
+      frame.indexOf("2 + export const add = true;"),
+    );
     expect(frame).not.toContain("alpha.ts note");
     expect(frame).not.toContain("review");
     expect(frame).not.toContain("confidence");
@@ -442,7 +468,11 @@ describe("UI components", () => {
 
   test("HelpDialog renders the keyboard help copy", async () => {
     const theme = resolveTheme("midnight", null);
-    const frame = await captureFrame(<HelpDialog left={2} theme={theme} width={68} onClose={() => {}} />, 76, 14);
+    const frame = await captureFrame(
+      <HelpDialog left={2} theme={theme} width={68} onClose={() => {}} />,
+      76,
+      14,
+    );
 
     expect(frame).toContain("Keyboard");
     expect(frame).toContain("F10 menus");
@@ -632,7 +662,10 @@ describe("UI components", () => {
 
     const addedLines = frame
       .split("\n")
-      .filter((line) => line.includes("export const message = 'this is a very") || /^▌\s{6,}\S/.test(line));
+      .filter(
+        (line) =>
+          line.includes("export const message = 'this is a very") || /^▌\s{6,}\S/.test(line),
+      );
 
     expect(frame).toContain("1   -  export const message = 'short';");
     expect(addedLines[0]).toContain("1 +  export const message = 'this is a very l");
@@ -677,14 +710,23 @@ describe("UI components", () => {
     expect(frame).toContain("Ungrounded note");
     expect(frame).toContain("Falls back to the first visible");
     expect(frame).toContain("row.");
-    expect(frame.indexOf("AI note · hunk")).toBeLessThan(frame.indexOf("1 - export const value = 1;"));
+    expect(frame.indexOf("AI note · hunk")).toBeLessThan(
+      frame.indexOf("1 - export const value = 1;"),
+    );
   });
 
   test("PierreDiffView shows contextual messages when there is no selected file or no textual hunks", async () => {
     const theme = resolveTheme("midnight", null);
 
     const noFileFrame = await captureFrame(
-      <PierreDiffView file={undefined} layout="split" theme={theme} width={72} selectedHunkIndex={0} scrollable={false} />,
+      <PierreDiffView
+        file={undefined}
+        layout="split"
+        theme={theme}
+        width={72}
+        selectedHunkIndex={0}
+        scrollable={false}
+      />,
       76,
       6,
     );
@@ -705,14 +747,28 @@ describe("UI components", () => {
     expect(renameOnlyFrame).toContain("This change only renames the file.");
 
     const newFileFrame = await captureFrame(
-      <PierreDiffView file={createEmptyDiffFile("new")} layout="split" theme={theme} width={72} selectedHunkIndex={0} scrollable={false} />,
+      <PierreDiffView
+        file={createEmptyDiffFile("new")}
+        layout="split"
+        theme={theme}
+        width={72}
+        selectedHunkIndex={0}
+        scrollable={false}
+      />,
       76,
       6,
     );
     expect(newFileFrame).toContain("The file is marked as new.");
 
     const deletedFileFrame = await captureFrame(
-      <PierreDiffView file={createEmptyDiffFile("deleted")} layout="split" theme={theme} width={72} selectedHunkIndex={0} scrollable={false} />,
+      <PierreDiffView
+        file={createEmptyDiffFile("deleted")}
+        layout="split"
+        theme={theme}
+        width={72}
+        selectedHunkIndex={0}
+        scrollable={false}
+      />,
       76,
       6,
     );
@@ -729,7 +785,14 @@ describe("UI components", () => {
     const theme = resolveTheme("midnight", null);
 
     const firstSetup = await testRender(
-      <PierreDiffView file={file} layout="split" theme={theme} width={180} selectedHunkIndex={0} scrollable={false} />,
+      <PierreDiffView
+        file={file}
+        layout="split"
+        theme={theme}
+        width={180}
+        selectedHunkIndex={0}
+        scrollable={false}
+      />,
       { width: 184, height: 10 },
     );
 
