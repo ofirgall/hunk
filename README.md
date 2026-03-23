@@ -49,7 +49,7 @@ hunk --version # print the installed version
 
 ### Working with Git
 
-Hunk mirrors Git's diff-style commands, so `hunk diff`, `hunk show`, and `hunk stash show` feel familiar immediately while opening the changeset in a review UI instead of plain diff text.
+Hunk mirrors Git's diff-style commands, but opens the changeset in a review UI instead of plain text.
 
 ```bash
 hunk diff         # review current repo changes
