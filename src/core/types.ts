@@ -104,6 +104,14 @@ export interface SessionGetCommandInput {
   selector: SessionSelectorInput;
 }
 
+export interface SessionSelectionCommandInput {
+  kind: "session";
+  action: "selection";
+  output: SessionCommandOutput;
+  selector: SessionSelectorInput;
+  state: "focused" | "published";
+}
+
 export interface SessionNavigateCommandInput {
   kind: "session";
   action: "navigate";
@@ -165,6 +173,7 @@ export interface SessionCommentClearCommandInput {
 export type SessionCommandInput =
   | SessionListCommandInput
   | SessionGetCommandInput
+  | SessionSelectionCommandInput
   | SessionNavigateCommandInput
   | SessionReloadCommandInput
   | SessionCommentAddCommandInput

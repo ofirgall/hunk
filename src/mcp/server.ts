@@ -1,7 +1,9 @@
 import { HUNK_SESSION_SOCKET_PATH, resolveHunkMcpConfig } from "./config";
 import { HunkDaemonState } from "./daemonState";
 import type { SessionClientMessage } from "./types";
+import type { HunkNotifyEventType } from "./types";
 import {
+  HUNK_NOTIFY_API_PATH,
   HUNK_SESSION_API_PATH,
   HUNK_SESSION_API_VERSION,
   HUNK_SESSION_CAPABILITIES_PATH,
@@ -18,6 +20,7 @@ const SUPPORTED_SESSION_ACTIONS: SessionDaemonAction[] = [
   "list",
   "get",
   "context",
+  "selection",
   "navigate",
   "reload",
   "comment-add",
@@ -80,6 +83,9 @@ async function handleSessionApiRequest(state: HunkDaemonState, request: Request)
         break;
       case "context":
         response = { context: state.getSelectedContext(input.selector) };
+        break;
+      case "selection":
+        response = { selection: state.getSelection(input.selector, input.state) };
         break;
       case "navigate": {
         if (
@@ -153,6 +159,68 @@ async function handleSessionApiRequest(state: HunkDaemonState, request: Request)
   }
 }
 
+function handleNotifyRequest(state: HunkDaemonState, request: Request) {
+  if (request.method !== "GET") {
+    return jsonError("Notify requests must use GET.", 405);
+  }
+
+  const url = new URL(request.url);
+  const sessionId = url.searchParams.get("sessionId") || undefined;
+  const repoRoot = url.searchParams.get("repoRoot") || undefined;
+  const requestedTypes = url.searchParams
+    .getAll("type")
+    .filter(
+      (type): type is HunkNotifyEventType =>
+        type === "session.opened" ||
+        type === "session.closed" ||
+        type === "focus.changed" ||
+        type === "selection.published",
+    );
+  const encoder = new TextEncoder();
+
+  let unsubscribe: () => void = () => undefined;
+  let keepAliveTimer: Timer | null = null;
+
+  const stream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      const send = (chunk: string) => controller.enqueue(encoder.encode(chunk));
+      send(`: connected ${new Date().toISOString()}\n\n`);
+
+      unsubscribe = state.subscribeToNotifications(
+        (event) => {
+          send(`event: ${event.type}\n`);
+          send(`data: ${JSON.stringify(event)}\n\n`);
+        },
+        {
+          sessionId,
+          repoRoot,
+          types: requestedTypes.length > 0 ? requestedTypes : undefined,
+        },
+      );
+
+      keepAliveTimer = setInterval(() => {
+        send(`: keepalive ${new Date().toISOString()}\n\n`);
+      }, 15_000);
+      keepAliveTimer.unref?.();
+    },
+    cancel() {
+      unsubscribe();
+      if (keepAliveTimer) {
+        clearInterval(keepAliveTimer);
+        keepAliveTimer = null;
+      }
+    },
+  });
+
+  return new Response(stream, {
+    headers: {
+      "content-type": "text/event-stream",
+      "cache-control": "no-cache, no-transform",
+      connection: "keep-alive",
+    },
+  });
+}
+
 /** Serve the local Hunk session daemon and websocket session broker. */
 export function serveHunkMcpServer() {
   const config = resolveHunkMcpConfig();
@@ -182,6 +250,7 @@ export function serveHunkMcpServer() {
             uptimeMs: Date.now() - startedAt,
             sessionApi: `${config.httpOrigin}${HUNK_SESSION_API_PATH}`,
             sessionCapabilities: `${config.httpOrigin}${HUNK_SESSION_CAPABILITIES_PATH}`,
+            notify: `${config.httpOrigin}${HUNK_NOTIFY_API_PATH}`,
             sessionSocket: `${config.wsOrigin}${HUNK_SESSION_SOCKET_PATH}`,
             sessions: state.listSessions().length,
             pendingCommands: state.getPendingCommandCount(),
@@ -195,6 +264,10 @@ export function serveHunkMcpServer() {
 
         if (url.pathname === HUNK_SESSION_API_PATH) {
           return handleSessionApiRequest(state, request);
+        }
+
+        if (url.pathname === HUNK_NOTIFY_API_PATH) {
+          return handleNotifyRequest(state, request);
         }
 
         if (url.pathname === "/mcp") {
@@ -233,6 +306,9 @@ export function serveHunkMcpServer() {
               break;
             case "snapshot":
               state.updateSnapshot(parsed.sessionId, parsed.snapshot);
+              break;
+            case "selection":
+              state.updateSelection(parsed.sessionId, parsed.state, parsed.selection);
               break;
             case "heartbeat":
               state.markSessionSeen(parsed.sessionId);

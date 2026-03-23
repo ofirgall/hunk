@@ -38,7 +38,11 @@ import { buildAppMenus } from "./lib/appMenus";
 import { buildFileListEntry } from "./lib/files";
 import { buildHunkCursors, findNextHunkCursor } from "./lib/hunks";
 import { fileRowId } from "./lib/ids";
-import { buildPiSelectionPayload, writePiSelectionPayload } from "./lib/piSelection";
+import {
+  buildHunkSelectionPayload,
+  buildPiSelectionPayload,
+  writePiSelectionPayload,
+} from "./lib/piSelection";
 import { resolveResponsiveLayout } from "./lib/responsive";
 import { resizeSidebarWidth } from "./lib/sidebar";
 import { resolveTheme, THEMES } from "./themes";
@@ -372,6 +376,23 @@ function AppShell({
     }, 2200);
   }, []);
 
+  useEffect(() => {
+    if (!hostClient || !baseSelectedFile) {
+      return;
+    }
+
+    const selection = buildHunkSelectionPayload(
+      bootstrap.changeset,
+      baseSelectedFile,
+      selectedHunkIndex,
+    );
+    if (!selection) {
+      return;
+    }
+
+    hostClient.updateSelection("focused", selection);
+  }, [bootstrap.changeset, hostClient, baseSelectedFile, selectedHunkIndex]);
+
   /** Export the focused hunk to the project-local pi selection bridge file. */
   const sendSelectionToPi = useCallback(() => {
     if (!selectedFile) {
@@ -385,11 +406,12 @@ function AppShell({
       return;
     }
 
+    hostClient?.publishSelection(payload);
     const selectionPath = writePiSelectionPayload(payload);
     flashStatusMessage(
       `Sent ${selectedFile.path} hunk ${selectedHunkIndex + 1} to Pi (${selectionPath}).`,
     );
-  }, [bootstrap.changeset, flashStatusMessage, selectedFile, selectedHunkIndex]);
+  }, [bootstrap.changeset, flashStatusMessage, hostClient, selectedFile, selectedHunkIndex]);
 
   const menus = useMemo(
     () =>
