@@ -10,6 +10,11 @@ export interface DiffSectionMetrics {
   hunkAnchorRows: Map<number, number>;
 }
 
+const NOTE_AWARE_SECTION_METRICS_CACHE = new WeakMap<
+  VisibleAgentNote[],
+  Map<string, DiffSectionMetrics>
+>();
+
 function buildBasePlannedRows(
   file: DiffFile,
   layout: Exclude<LayoutMode, "auto">,
@@ -74,6 +79,15 @@ export function measureDiffSectionMetrics(
     };
   }
 
+  const cacheKey = `${file.id}:${layout}:${showHunkHeaders ? 1 : 0}:${theme.id}:${width}`;
+  if (visibleAgentNotes.length > 0) {
+    const cachedByNotes = NOTE_AWARE_SECTION_METRICS_CACHE.get(visibleAgentNotes);
+    const cached = cachedByNotes?.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+  }
+
   const plannedRows = buildBasePlannedRows(file, layout, showHunkHeaders, theme, visibleAgentNotes);
   const hunkAnchorRows = new Map<number, number>();
   let bodyHeight = 0;
@@ -86,10 +100,18 @@ export function measureDiffSectionMetrics(
     bodyHeight += plannedRowHeight(row, showHunkHeaders, layout, width);
   }
 
-  return {
+  const metrics = {
     bodyHeight,
     hunkAnchorRows,
   };
+
+  if (visibleAgentNotes.length > 0) {
+    const cachedByNotes = NOTE_AWARE_SECTION_METRICS_CACHE.get(visibleAgentNotes) ?? new Map();
+    cachedByNotes.set(cacheKey, metrics);
+    NOTE_AWARE_SECTION_METRICS_CACHE.set(visibleAgentNotes, cachedByNotes);
+  }
+
+  return metrics;
 }
 
 /** Estimate the number of diff-body rows for one file in the windowed path. */
