@@ -6,6 +6,7 @@ export function StatusBar({
   canResizeDivider = false,
   filter,
   filterFocused,
+  message,
   terminalWidth,
   theme,
   onCloseMenu,
@@ -15,6 +16,7 @@ export function StatusBar({
   canResizeDivider?: boolean;
   filter: string;
   filterFocused: boolean;
+  message?: string;
   terminalWidth: number;
   theme: AppTheme;
   onCloseMenu: () => void;
@@ -37,6 +39,7 @@ export function StatusBar({
     "l lines",
     "w wrap",
     "m meta",
+    "p pi",
     "q quit",
   );
 
@@ -68,9 +71,9 @@ export function StatusBar({
           />
         </>
       ) : (
-        <text fg={theme.muted}>
+        <text fg={message ? theme.badgeNeutral : theme.muted}>
           {fitText(
-            `${hintParts.join("  ")}${filter ? `  filter=${filter}` : ""}`,
+            message ?? `${hintParts.join("  ")}${filter ? `  filter=${filter}` : ""}`,
             terminalWidth - 2,
           )}
         </text>

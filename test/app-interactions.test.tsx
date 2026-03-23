@@ -1,4 +1,7 @@
 import { describe, expect, mock, test } from "bun:test";
+import { existsSync, mkdtempSync, readFileSync, rmSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { testRender } from "@opentui/react/test-utils";
 import { parseDiffFromFile } from "@pierre/diffs";
 import { act } from "react";
@@ -234,6 +237,52 @@ describe("App interactions", () => {
       await act(async () => {
         setup.renderer.destroy();
       });
+    }
+  });
+
+  test("keyboard shortcut exports the selected hunk to the pi selection bridge file", async () => {
+    const tempRoot = mkdtempSync(join(tmpdir(), "hunk-pi-bridge-"));
+    const baseBootstrap = createSingleFileBootstrap();
+    const bootstrap = {
+      ...baseBootstrap,
+      changeset: {
+        ...baseBootstrap.changeset,
+        sourceLabel: tempRoot,
+      },
+    } satisfies AppBootstrap;
+    const setup = await testRender(<App bootstrap={bootstrap} />, {
+      width: 240,
+      height: 24,
+    });
+
+    try {
+      await flush(setup);
+
+      await act(async () => {
+        await setup.mockInput.typeText("p");
+      });
+      await flush(setup);
+
+      const selectionPath = join(tempRoot, ".hunk", "pi-selection.json");
+      expect(existsSync(selectionPath)).toBe(true);
+
+      const payload = JSON.parse(readFileSync(selectionPath, "utf8")) as {
+        filePath: string;
+        hunkIndex: number;
+        prompt: string;
+        patch: string;
+      };
+      expect(payload.filePath).toBe("alpha.ts");
+      expect(payload.hunkIndex).toBe(0);
+      expect(payload.prompt).toContain("Selected hunk from Hunk: alpha.ts");
+      expect(payload.patch).toContain("@@ -1,1 +1,2 @@");
+      expect(payload.patch).toContain("-export const alpha = 1;");
+      expect(payload.patch).toContain("+export const alpha = 2;");
+    } finally {
+      await act(async () => {
+        setup.renderer.destroy();
+      });
+      rmSync(tempRoot, { recursive: true, force: true });
     }
   });
 

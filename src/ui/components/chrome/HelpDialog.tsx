@@ -32,7 +32,9 @@ export function HelpDialog({
     >
       <text fg={theme.text}>Keyboard</text>
       <text fg={theme.muted}>F10 menus arrows navigate menus Enter select Esc close menu</text>
-      <text fg={theme.muted}>1 split 2 stack 0 auto t theme a notes l lines w wrap m meta</text>
+      <text fg={theme.muted}>
+        1 split 2 stack 0 auto t theme a notes l lines w wrap m meta p pi
+      </text>
       <text fg={theme.muted}>
         ↑/↓ line scroll space next page b previous page Home/End jump [ previous hunk ] next hunk
       </text>

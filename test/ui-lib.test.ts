@@ -105,6 +105,7 @@ describe("ui helpers", () => {
       requestQuit: () => {},
       selectLayoutMode: () => {},
       selectThemeId: () => {},
+      sendSelectionToPi: () => {},
       showAgentNotes: true,
       showHelp: false,
       showHunkHeaders: false,
