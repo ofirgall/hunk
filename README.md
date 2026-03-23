@@ -67,17 +67,17 @@ git diff --no-color | hunk patch -  # review a patch from stdin
 
 ## Feature comparison
 
-| Capability                         | hunk | difftastic | delta | diff |
-| ---------------------------------- | ---- | ---------- | ----- | ---- |
-| Review-first interactive UI        | ✅   | ❌         | ❌    | ❌   |
-| Multi-file review stream + sidebar | ✅   | ❌         | ❌    | ❌   |
-| Inline agent / AI annotations      | ✅   | ❌         | ❌    | ❌   |
-| Responsive auto split/stack layout | ✅   | ❌         | ❌    | ❌   |
-| Mouse support inside the viewer    | ✅   | ❌         | ❌    | ❌   |
-| Runtime view toggles               | ✅   | ❌         | ❌    | ❌   |
-| Syntax highlighting                | ✅   | ✅         | ✅    | ❌   |
-| Structural diffing                 | ❌   | ✅         | ❌    | ❌   |
-| Pager-compatible mode              | ✅   | ✅         | ✅    | ✅   |
+| Capability                         | hunk | difftastic | delta | diff-so-fancy | diff |
+| ---------------------------------- | ---- | ---------- | ----- | ------------- | ---- |
+| Review-first interactive UI        | ✅   | ❌         | ❌    | ❌            | ❌   |
+| Multi-file review stream + sidebar | ✅   | ❌         | ❌    | ❌            | ❌   |
+| Inline agent / AI annotations      | ✅   | ❌         | ❌    | ❌            | ❌   |
+| Responsive auto split/stack layout | ✅   | ❌         | ❌    | ❌            | ❌   |
+| Mouse support inside the viewer    | ✅   | ❌         | ❌    | ❌            | ❌   |
+| Runtime view toggles               | ✅   | ❌         | ❌    | ❌            | ❌   |
+| Syntax highlighting                | ✅   | ✅         | ✅    | ❌            | ❌   |
+| Structural diffing                 | ❌   | ✅         | ❌    | ❌            | ❌   |
+| Pager-compatible mode              | ✅   | ✅         | ✅    | ✅            | ✅   |
 
 Hunk is optimized for reviewing a full changeset interactively. If you primarily want syntax-aware diffing, `difftastic` is still the stronger fit.
 
