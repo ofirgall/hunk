@@ -143,8 +143,18 @@ export function DiffPane({
   }, [scrollRef]);
 
   const sectionMetrics = useMemo(
-    () => files.map((file) => measureDiffSectionMetrics(file, layout, showHunkHeaders, theme)),
-    [files, layout, showHunkHeaders, theme],
+    () =>
+      files.map((file) =>
+        measureDiffSectionMetrics(
+          file,
+          layout,
+          showHunkHeaders,
+          theme,
+          visibleAgentNotesByFile.get(file.id) ?? EMPTY_VISIBLE_AGENT_NOTES,
+          diffContentWidth,
+        ),
+      ),
+    [diffContentWidth, files, layout, showHunkHeaders, theme, visibleAgentNotesByFile],
   );
   const estimatedBodyHeights = useMemo(
     () => sectionMetrics.map((metrics) => metrics.bodyHeight),
