@@ -1,21 +1,14 @@
 import type { DiffFile, LayoutMode } from "../../core/types";
 import { buildSplitRows, buildStackRows } from "../diff/pierre";
-import { measurePlannedHunkBounds } from "../diff/plannedReviewRows";
+import { measurePlannedHunkBounds, type PlannedHunkBounds } from "../diff/plannedReviewRows";
 import { buildReviewRenderPlan } from "../diff/reviewRenderPlan";
 import type { VisibleAgentNote } from "./agentAnnotations";
 import type { AppTheme } from "../themes";
 
-export interface DiffSectionHunkBounds {
-  top: number;
-  height: number;
-  startRowId: string;
-  endRowId: string;
-}
-
 export interface DiffSectionMetrics {
   bodyHeight: number;
   hunkAnchorRows: Map<number, number>;
-  hunkBounds: Map<number, DiffSectionHunkBounds>;
+  hunkBounds: Map<number, PlannedHunkBounds>;
 }
 
 const NOTE_AWARE_SECTION_METRICS_CACHE = new WeakMap<
