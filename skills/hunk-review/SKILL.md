@@ -1,177 +1,108 @@
 ---
 name: hunk-review
-description: Use when the task involves Hunk review sessions. Helps a coding agent explain what Hunk is, prefer live Hunk session CLI inspection over shell parsing, inspect current review focus, navigate or reload live sessions, and leave inline review comments.
-compatibility: Requires Hunk from this repo or the published hunkdiff package. Works best with a real TTY for interactive review.
+description: Interacts with live Hunk diff review sessions via CLI. Inspects review focus, navigates files and hunks, reloads session contents, and adds inline review comments. Use when the user has a Hunk session running or wants to review diffs interactively.
 ---
 
 # Hunk Review
 
-Use this skill when the task involves Hunk itself or when the user wants an interactive review workflow centered on a live Hunk session.
+Hunk is an interactive terminal diff viewer. The TUI is for the user -- do NOT run `hunk diff`, `hunk show`, or other interactive commands directly. Use `hunk session *` CLI commands to inspect and control live sessions.
 
-Start by explaining Hunk plainly: **Hunk is a review-first terminal diff viewer for agent-authored changesets.**
+If no session exists, ask the user to launch Hunk in their terminal first.
 
-**Important distinction:** Hunk is an interactive terminal UI meant for the user to view and navigate. As a coding agent, you should NOT invoke `hunk diff` or `hunk show` directly - these launch an interactive TUI that you cannot use. Instead, get agent-friendly information via `hunk session *` commands to inspect and manipulate existing live sessions.
+## Workflow
 
-If no live session exists yet, suggest the user launch Hunk in their terminal first, then use session commands to interact with it.
+```
+1. hunk session list                    # find live sessions
+2. hunk session context --repo .        # check current focus
+3. hunk session navigate ...            # move to the right place
+4. hunk session reload -- <command>     # swap contents if needed
+5. hunk session comment add ...         # leave review notes
+```
 
-## Mental model
+## Session selection
 
-Keep these product rules in mind:
+Every command (except `list`) needs a session target:
 
-- the main pane is one top-to-bottom multi-file review stream
-- the sidebar is for navigation, not single-file mode switching
-- layouts are `auto`, `split`, and `stack`
-- `[` and `]` navigate hunks across the full review stream
-- agent notes belong beside the code they explain
+- `--repo <path>` -- match by repo root (most common)
+- `<session-id>` -- match by exact ID (use when multiple sessions share a repo)
+- If only one session exists, it auto-resolves
 
-Your job is not just to inspect the diff privately. Use Hunk as a shared explanation surface for the code author.
+## Commands
 
-## Default operating rule
+### Inspect
 
-If a live Hunk session already exists, prefer `hunk session ...` over scraping terminal output or opening another review window.
+```bash
+hunk session list [--json]
+hunk session get (--repo . | <id>) [--json]
+hunk session context (--repo . | <id>) [--json]
+```
 
-Hunk uses one local-only loopback daemon to broker commands to live sessions. Normal Hunk sessions register automatically. `hunk mcp serve` is for manual startup or debugging only. `HUNK_MCP_DISABLE=1` disables registration for one session.
+### Navigate
 
-## Default review workflow
+Requires `--file` and exactly one of `--hunk`, `--new-line`, or `--old-line`:
 
-Use this loop unless there is a strong reason not to:
+```bash
+hunk session navigate --repo . --file src/App.tsx --hunk 2
+hunk session navigate --repo . --file src/App.tsx --new-line 372
+hunk session navigate --repo . --file src/App.tsx --old-line 355
+```
 
-1. `hunk session list`
-2. `hunk session context`
-3. `hunk session navigate` if the current focus is wrong
-4. `hunk session reload -- <hunk command>` if the same live window should show different contents
-5. `hunk session comment add`
+- `--hunk <n>` is 1-based
+- `--new-line`/`--old-line` are 1-based line numbers on that diff side
+
+### Reload
+
+Swaps the live session's contents. Pass a Hunk review command after `--`:
+
+```bash
+hunk session reload --repo . -- diff
+hunk session reload --repo . -- show HEAD~1
+hunk session reload --repo . -- show HEAD~1 -- README.md
+```
+
+### Comments
+
+```bash
+hunk session comment add --repo . --file README.md --new-line 103 --summary "Tighten this wording" [--rationale "..."] [--author "agent"]
+hunk session comment list --repo . [--file README.md]
+hunk session comment rm --repo . <comment-id>
+hunk session comment clear --repo . --yes [--file README.md]
+```
+
+- `comment add` requires `--file`, `--summary`, and exactly one of `--old-line` or `--new-line`
+- Quote `--summary` and `--rationale` defensively in the shell
+
+## New files in working-tree reviews
+
+Newly created files won't appear in `hunk diff` until Git knows about them:
+
+```bash
+git add -N src/new-file.ts
+hunk session reload --repo . -- diff
+```
+
+## Guiding a review
+
+The user may ask you to walk them through a changeset or review code using Hunk. Your role is to narrate: steer the user's view to what matters and leave comments that explain what they're looking at.
+
+Typical flow:
+
+1. Load the right content (`reload` if needed)
+2. Navigate to the first interesting file/hunk
+3. Add a comment explaining what's happening and why
+4. Move to the next point of interest -- repeat
+5. Summarize when done
 
 Guidelines:
 
-- if multiple sessions are live, pass `sessionId` explicitly
-- use `--repo <path>` when you want the session whose repo root matches one checkout
-- use `hunk session get` only when you need broad session metadata
-- keep the visible review state aligned with the explanation you are giving
-- prefer concise inline comments tied to real diff lines or hunks
+- Work in the order that tells the clearest story, not necessarily file order
+- Navigate before commenting so the user sees the code you're discussing
+- Keep comments focused: intent, structure, risks, or follow-ups
+- Don't comment on every hunk -- highlight what the user wouldn't spot themselves
 
-## Precise command patterns
+## Common errors
 
-### Navigate precisely
-
-Use exact `navigate` targets instead of guessing flags:
-
-```bash
-hunk session navigate --repo . --file README.md --hunk 2
-hunk session navigate --repo . --file src/ui/App.tsx --new-line 372
-hunk session navigate --repo . --file src/ui/App.tsx --old-line 355
-```
-
-Targeting rules:
-
-- use `--hunk <n>` for a 1-based hunk number within the file
-- use `--new-line <n>` for a line on the new side
-- use `--old-line <n>` for a line on the old side
-- do not invent extra flags; stick to the supported selectors above
-
-### Add and manage comments
-
-Use exact comment-management syntax:
-
-```bash
-hunk session comment add --repo . --file README.md --new-line 103 --summary "Tighten this wording"
-hunk session comment list --repo . --file README.md
-hunk session comment rm --repo . <comment-id>
-hunk session comment rm <session-id> <comment-id>
-```
-
-When passing comment text through a shell, quote `--summary` and `--rationale` defensively. Avoid raw backticks unless you are sure the shell will not interpret them.
-
-## Common commands
-
-**For coding agents:** Use these `hunk session` commands to inspect and manipulate live sessions without invoking the interactive UI:
-
-```bash
-hunk session list                           # see all live sessions
-hunk session context --repo .               # get current focus and state
-hunk session navigate --repo . --file README.md --hunk 2
-hunk session reload --repo . -- diff        # refresh with working tree
-hunk session reload --repo . -- show HEAD~1 # refresh with specific commit
-hunk session comment add --repo . --file README.md --new-line 103 --summary "Tighten this wording"
-hunk session comment list --repo . --file README.md
-```
-
-**For users:** Launch Hunk interactively in a terminal (not via agent):
-
-```bash
-hunk diff                                   # review working tree
-hunk show HEAD~1                            # review a commit
-bun run src/main.tsx -- diff                # from source (if in hunk repo)
-```
-
-Use `hunk diff --agent-context path/to/context.json` when a local rationale sidecar already exists.
-
-## Working-tree review playbook
-
-For the common case of steering one live `hunk diff` session while local files are changing:
-
-```bash
-hunk session list
-hunk session context --repo .
-git add -N src/new-file.ts                 # if a new file is missing from the review
-hunk session reload --repo . -- diff       # refresh the live working-tree review
-hunk session navigate --repo . --file src/new-file.ts --hunk 1
-hunk session comment add --repo . --file src/new-file.ts --new-line 10 --summary "Explain why this matters"
-```
-
-Important mental model:
-
-- live session commands only operate on files visible in the currently loaded review
-- for working-tree reviews, that means the file must appear in Git's diff
-- newly created files often need `git add -N <path>` before Hunk can navigate to them or attach comments there
-
-## Comment style
-
-Prefer comments that help the author understand the change, not comments that just restate the diff.
-
-Good comments usually do one of these:
-
-- explain intent
-- explain structure
-- point out why one hunk matters to the rest of the change
-- suggest a specific follow-up or risk to inspect
-
-Keep comments concise and spatially tied to the code they describe.
-
-## Common failure modes
-
-- `No visible diff file matches ...`
-  - the file is not part of the currently loaded review
-  - check `hunk session context --repo .`
-  - for a new file in a working-tree review, run `git add -N <path>` and then `hunk session reload --repo . -- diff`
-- the session is showing the wrong changeset
-  - use `hunk session reload --repo . -- diff`, `-- show ...`, or another nested Hunk review command
-- navigation target is ambiguous
-  - use one of `--hunk`, `--old-line`, or `--new-line`
-- multiple live sessions exist and commands hit the wrong one
-  - pass `sessionId` explicitly
-- no live session exists yet
-  - launch Hunk in a real terminal, then return to `hunk session list`
-
-## When no live session exists
-
-If the user wants interactive review and no live session exists, **suggest the user launch Hunk in their terminal** with a command like `hunk diff` or `hunk show`, then return to `hunk session list` once they confirm it's running.
-
-Do not attempt to launch Hunk yourself - you cannot interact with the TUI. Only the user can navigate the interactive interface.
-
-## Repo-specific notes
-
-When using Hunk for agent changes in this repo:
-
-- prefer a real TTY or tmux session for verification
-- `.hunk/latest.json` is optional local context, not required repo hygiene
-- if new files should appear in review before commit, use `git add -N <path>`
-- if testing local source changes, prefer `bun run src/main.tsx -- ...` over an installed binary
-
-## What this skill should steer toward
-
-- prefer visible, review-oriented actions over shell parsing of rendered terminal output
-- inspect the current live diff session before navigating blindly
-- reload the current live session instead of opening a second review window when the user wants to swap contents
-- use Hunk to help the code author understand the code, not just to help yourself inspect it
-- keep comments concise, concrete, and attached to the right place in the diff
+- **"No visible diff file matches ..."** -- file isn't in the loaded review. Check `context`, then `reload` if needed.
+- **"No active Hunk sessions"** -- ask the user to open Hunk in their terminal.
+- **"Multiple active sessions match"** -- pass `<session-id>` explicitly.
+- **"Specify exactly one navigation target"** -- pick one of `--hunk`, `--old-line`, `--new-line`.
