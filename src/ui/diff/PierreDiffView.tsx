@@ -94,6 +94,8 @@ export function PierreDiffView({
   const content = (
     <box style={{ width: "100%", flexDirection: "column" }}>
       {plannedRows.map((plannedRow) => {
+        // Mirror the same visibility/id decisions used by the scroll-bound helpers so the mounted
+        // tree can be measured by hunk later.
         const rowId = reviewRowId(plannedRow.key);
         const visible = plannedReviewRowVisible(plannedRow, {
           showHunkHeaders,

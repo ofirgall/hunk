@@ -5,6 +5,7 @@ import { buildReviewRenderPlan } from "../diff/reviewRenderPlan";
 import type { VisibleAgentNote } from "./agentAnnotations";
 import type { AppTheme } from "../themes";
 
+/** Cached placeholder sizing and hunk navigation metrics for one file section. */
 export interface DiffSectionMetrics {
   bodyHeight: number;
   hunkAnchorRows: Map<number, number>;
@@ -16,6 +17,7 @@ const NOTE_AWARE_SECTION_METRICS_CACHE = new WeakMap<
   Map<string, DiffSectionMetrics>
 >();
 
+/** Build the same planned rows the renderer will consume, but without requiring mounted UI. */
 function buildBasePlannedRows(
   file: DiffFile,
   layout: Exclude<LayoutMode, "auto">,
@@ -65,6 +67,8 @@ export function measureDiffSectionMetrics(
   }
 
   const plannedRows = buildBasePlannedRows(file, layout, showHunkHeaders, theme, visibleAgentNotes);
+  // Reuse the same bounds pass as the live renderer so placeholder sizing and navigation math stay
+  // in lock-step with what the user actually sees.
   const metrics = measurePlannedHunkBounds(plannedRows, {
     showHunkHeaders,
     layout,

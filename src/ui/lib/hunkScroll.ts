@@ -1,3 +1,9 @@
+/**
+ * Pick a scroll target that keeps the selected hunk readable.
+ *
+ * If the whole hunk fits, keep all of it in view. Otherwise bias toward showing the top of the
+ * hunk with a little breathing room.
+ */
 export function computeHunkRevealScrollTop({
   hunkTop,
   hunkHeight,
@@ -19,6 +25,8 @@ export function computeHunkRevealScrollTop({
   }
 
   if (clampedHeight <= clampedViewportHeight) {
+    // Preserve the preferred top padding when possible, but never at the cost of clipping the end
+    // of a hunk that would otherwise fit completely on screen.
     const minimumTopForFullHunk = Math.max(0, clampedTop + clampedHeight - clampedViewportHeight);
     return Math.max(desiredTop, minimumTopForFullHunk);
   }

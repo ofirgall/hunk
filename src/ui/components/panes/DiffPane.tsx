@@ -291,6 +291,8 @@ export function DiffPane({
       return null;
     }
 
+    // Convert the selected hunk's file-local bounds into absolute scrollbox coordinates by adding
+    // the accumulated section chrome and earlier file heights.
     let sectionTop = 0;
     for (let index = 0; index < selectedFileIndex; index += 1) {
       sectionTop += (index > 0 ? 1 : 0) + 1 + (estimatedBodyHeights[index] ?? 0);
