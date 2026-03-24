@@ -556,7 +556,8 @@ export function DiffPane({
       }
     };
 
-    // Run after this pane renders the selected section/hunk, then retry briefly while layout settles.
+    // Run after this pane renders the selected section/hunk, then retry briefly while layout
+    // settles across a couple of repaint cycles.
     scrollSelectionIntoView();
     const retryDelays = [0, 16, 48];
     const timeouts = retryDelays.map((delay) => setTimeout(scrollSelectionIntoView, delay));
