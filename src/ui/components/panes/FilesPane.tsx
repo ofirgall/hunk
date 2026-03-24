@@ -22,6 +22,10 @@ export function FilesPane({
   width: number;
   onSelectFile: (fileId: string) => void;
 }) {
+  const fileEntries = entries.filter((entry) => entry.kind === "file");
+  const additionsWidth = Math.max(2, ...fileEntries.map((entry) => entry.additionsText.length));
+  const deletionsWidth = Math.max(2, ...fileEntries.map((entry) => entry.deletionsText.length));
+
   return (
     <box
       style={{
@@ -55,6 +59,8 @@ export function FilesPane({
             ) : (
               <FileListItem
                 key={entry.id}
+                additionsWidth={additionsWidth}
+                deletionsWidth={deletionsWidth}
                 entry={entry}
                 selected={entry.id === selectedFileId}
                 textWidth={textWidth}

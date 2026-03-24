@@ -29,12 +29,16 @@ export function FileGroupHeader({
 
 /** Render one file row in the navigation sidebar. */
 export function FileListItem({
+  additionsWidth,
+  deletionsWidth,
   entry,
   selected,
   textWidth,
   theme,
   onSelect,
 }: {
+  additionsWidth: number;
+  deletionsWidth: number;
   entry: FileListEntry;
   selected: boolean;
   textWidth: number;
@@ -42,8 +46,6 @@ export function FileListItem({
   onSelect: () => void;
 }) {
   const rowBackground = selected ? theme.panelAlt : theme.panel;
-  const additionsWidth = entry.additionsText.length;
-  const deletionsWidth = entry.deletionsText.length;
   const statsWidth = additionsWidth + 1 + deletionsWidth;
   const nameWidth = Math.max(1, textWidth - 1 - statsWidth - 1);
 
@@ -75,9 +77,9 @@ export function FileListItem({
         }}
       >
         <text fg={theme.text}>{padText(fitText(entry.name, nameWidth), nameWidth)}</text>
-        <text fg={theme.badgeAdded}>{entry.additionsText}</text>
+        <text fg={theme.badgeAdded}>{entry.additionsText.padStart(additionsWidth, " ")}</text>
         <text fg={selected ? theme.text : theme.muted}> </text>
-        <text fg={theme.badgeRemoved}>{entry.deletionsText}</text>
+        <text fg={theme.badgeRemoved}>{entry.deletionsText.padStart(deletionsWidth, " ")}</text>
       </box>
     </box>
   );
