@@ -126,6 +126,7 @@ function AppShell({
   const [resizeStartWidth, setResizeStartWidth] = useState<number | null>(null);
   const [selectedFileId, setSelectedFileId] = useState(bootstrap.changeset.files[0]?.id ?? "");
   const [selectedHunkIndex, setSelectedHunkIndex] = useState(0);
+  const [scrollToNote, setScrollToNote] = useState(false);
   const deferredFilter = useDeferredValue(filter);
 
   const pagerMode = Boolean(bootstrap.input.options.pager);
@@ -135,6 +136,7 @@ function AppShell({
     filesScrollRef.current?.scrollChildIntoView(fileRowId(fileId));
     setSelectedFileId(fileId);
     setSelectedHunkIndex(nextHunkIndex);
+    setScrollToNote(false);
   }, []);
 
   const openAgentNotes = useCallback(() => {
@@ -285,6 +287,7 @@ function AppShell({
     filesScrollRef.current?.scrollChildIntoView(fileRowId(nextCursor.fileId));
     setSelectedFileId(nextCursor.fileId);
     setSelectedHunkIndex(nextCursor.hunkIndex);
+    setScrollToNote(false);
   };
 
   /** Move the review focus to the next or previous annotated hunk. */
@@ -302,6 +305,7 @@ function AppShell({
     filesScrollRef.current?.scrollChildIntoView(fileRowId(nextCursor.fileId));
     setSelectedFileId(nextCursor.fileId);
     setSelectedHunkIndex(nextCursor.hunkIndex);
+    setScrollToNote(true);
   };
 
   /** Scroll the main review pane by line steps, viewport fractions, or whole-content jumps. */
@@ -992,6 +996,7 @@ function AppShell({
           scrollRef={diffScrollRef}
           selectedFileId={selectedFile?.id}
           selectedHunkIndex={selectedHunkIndex}
+          scrollToNote={scrollToNote}
           separatorWidth={diffSeparatorWidth}
           showAgentNotes={showAgentNotes}
           showLineNumbers={showLineNumbers}
