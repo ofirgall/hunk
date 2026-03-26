@@ -7,6 +7,7 @@ import {
   hunkLineRange,
 } from "../../core/liveComments";
 import { HunkHostClient } from "../../mcp/client";
+import { buildAnnotatedHunkCursors, findNextHunkCursor } from "../lib/hunks";
 import type {
   LiveComment,
   ReloadedSessionResult,
@@ -58,6 +59,42 @@ export function useHunkSessionBridge({
 
   const navigateToHunkSelection = useCallback(
     async (message: Extract<SessionServerMessage, { command: "navigate_to_hunk" }>) => {
+      /** Handle relative comment navigation (--next-comment / --prev-comment). */
+      if (message.input.commentDirection) {
+        const delta = message.input.commentDirection === "next" ? 1 : -1;
+        const annotatedCursors = buildAnnotatedHunkCursors(files);
+        const nextCursor = findNextHunkCursor(
+          annotatedCursors,
+          selectedFile?.id,
+          selectedHunkIndex,
+          delta,
+        );
+
+        if (!nextCursor) {
+          throw new Error("No annotated hunks found in the current review.");
+        }
+
+        const targetFile = files.find((f) => f.id === nextCursor.fileId);
+        if (!targetFile) {
+          throw new Error("Resolved annotated hunk references an unknown file.");
+        }
+
+        jumpToFile(targetFile.id, nextCursor.hunkIndex);
+        return {
+          fileId: targetFile.id,
+          filePath: targetFile.path,
+          hunkIndex: nextCursor.hunkIndex,
+          selectedHunk: buildSelectedHunkSummary(targetFile, nextCursor.hunkIndex),
+        };
+      }
+
+      /** Handle absolute navigation by file + hunk/line target. */
+      if (!message.input.filePath) {
+        throw new Error(
+          "navigate requires --file when not using --next-comment or --prev-comment.",
+        );
+      }
+
       const file = findDiffFileByPath(files, message.input.filePath);
       if (!file) {
         throw new Error(`No visible diff file matches ${message.input.filePath}.`);
@@ -84,7 +121,7 @@ export function useHunkSessionBridge({
         selectedHunk: buildSelectedHunkSummary(file, hunkIndex),
       };
     },
-    [buildSelectedHunkSummary, files, jumpToFile],
+    [buildSelectedHunkSummary, files, jumpToFile, selectedFile?.id, selectedHunkIndex],
   );
 
   const applyIncomingComment = useCallback(
