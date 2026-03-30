@@ -38,8 +38,10 @@ function pierreRenderOptions(appearance: AppTheme["appearance"]) {
 }
 
 type HighlightOptions = ReturnType<typeof getHighlighterOptions>;
+type Highlighter = Awaited<ReturnType<typeof getSharedHighlighter>>;
 
 const highlighterOptionsByKey = new Map<string, HighlightOptions>();
+const highlighterPromiseCache = new Map<string, Promise<Highlighter>>();
 let queuedHighlightWork = Promise.resolve();
 
 type HastNode = HastTextNode | HastElementNode;
@@ -352,6 +354,11 @@ async function prepareHighlighter(
 ) {
   const resolvedLanguage = language ?? "text";
   const cacheKey = `${appearance}:${resolvedLanguage}`;
+  const cached = highlighterPromiseCache.get(cacheKey);
+  if (cached) {
+    return cached;
+  }
+
   const options =
     highlighterOptionsByKey.get(cacheKey) ??
     getHighlighterOptions(resolvedLanguage, {
@@ -362,10 +369,16 @@ async function prepareHighlighter(
     highlighterOptionsByKey.set(cacheKey, options);
   }
 
-  return getSharedHighlighter({
+  const highlighterPromise = getSharedHighlighter({
     ...options,
     preferredHighlighter: "shiki-wasm",
+  }).catch((error) => {
+    highlighterPromiseCache.delete(cacheKey);
+    throw error;
   });
+
+  highlighterPromiseCache.set(cacheKey, highlighterPromise);
+  return highlighterPromise;
 }
 
 /** Queue highlight rendering so startup work stays serialized in request order. */
