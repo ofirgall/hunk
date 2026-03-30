@@ -119,6 +119,7 @@ export async function prepareStartupPlan(
 
   const bootstrap = await loadAppBootstrapImpl(cliInput);
   bootstrap.keymap = configured.keymap;
+  bootstrap.colorOverrides = configured.colorOverrides;
   const controllingTerminal = usesPipedPatchInputImpl(cliInput)
     ? openControllingTerminalImpl()
     : null;

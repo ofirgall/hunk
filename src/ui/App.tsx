@@ -43,7 +43,7 @@ import { buildAnnotatedHunkCursors, buildHunkCursors, findNextHunkCursor } from 
 import { fileRowId } from "./lib/ids";
 import { resolveResponsiveLayout } from "./lib/responsive";
 import { resizeSidebarWidth } from "./lib/sidebar";
-import { resolveTheme, THEMES } from "./themes";
+import { applyColorOverrides, resolveTheme, THEMES } from "./themes";
 
 type FocusArea = "files" | "filter";
 
@@ -136,7 +136,11 @@ function AppShell({
 
   const pagerMode = Boolean(bootstrap.input.options.pager);
   const keymap = bootstrap.keymap ?? DEFAULT_KEYMAP;
-  const activeTheme = resolveTheme(themeId, renderer.themeMode);
+  const colorOverrides = bootstrap.colorOverrides ?? {};
+  const activeTheme = applyColorOverrides(
+    resolveTheme(themeId, renderer.themeMode),
+    colorOverrides,
+  );
 
   const jumpToFile = useCallback((fileId: string, nextHunkIndex = 0) => {
     filesScrollRef.current?.scrollChildIntoView(fileRowId(fileId));
@@ -1014,6 +1018,7 @@ export function App({
         cwd: options?.sourcePath,
       });
       nextBootstrap.keymap = configured.keymap;
+      nextBootstrap.colorOverrides = configured.colorOverrides;
       const nextSnapshot = createInitialSessionSnapshot(nextBootstrap);
 
       let sessionId = "local-session";

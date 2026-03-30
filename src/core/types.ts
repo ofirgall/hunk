@@ -1,5 +1,6 @@
 import type { FileDiffMetadata } from "@pierre/diffs";
 import type { Keymap } from "./keymap";
+import type { ThemeColorOverrides } from "../ui/themes";
 
 export type LayoutMode = "auto" | "split" | "stack";
 
@@ -240,6 +241,7 @@ export interface AppBootstrap {
   input: CliInput;
   changeset: Changeset;
   keymap?: Keymap;
+  colorOverrides?: ThemeColorOverrides;
   initialMode: LayoutMode;
   initialTheme?: string;
   initialShowLineNumbers?: boolean;

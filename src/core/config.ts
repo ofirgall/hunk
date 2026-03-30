@@ -2,6 +2,7 @@ import fs from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { type Keymap, DEFAULT_KEYMAP, mergeKeymap, parseKeysConfig } from "./keymap";
 import type { CliInput, CommonOptions, LayoutMode, PersistedViewPreferences } from "./types";
+import { type ThemeColorOverrides, parseColorsConfig } from "../ui/themes";
 
 const DEFAULT_VIEW_PREFERENCES: PersistedViewPreferences = {
   mode: "auto",
@@ -19,6 +20,7 @@ interface ConfigResolutionOptions {
 interface HunkConfigResolution {
   input: CliInput;
   keymap: Keymap;
+  colorOverrides: ThemeColorOverrides;
   globalConfigPath?: string;
   repoConfigPath?: string;
 }
@@ -157,6 +159,7 @@ export function resolveConfiguredCliInput(
   };
 
   let keymap: Keymap = DEFAULT_KEYMAP;
+  let colorOverrides: ThemeColorOverrides = {};
 
   if (userConfigPath) {
     const globalConfig = readTomlRecord(userConfigPath);
@@ -164,6 +167,10 @@ export function resolveConfiguredCliInput(
     const keysSection = globalConfig.keys;
     if (isRecord(keysSection)) {
       keymap = mergeKeymap(keymap, parseKeysConfig(keysSection));
+    }
+    const colorsSection = globalConfig.colors;
+    if (isRecord(colorsSection)) {
+      colorOverrides = { ...colorOverrides, ...parseColorsConfig(colorsSection) };
     }
   }
 
@@ -173,6 +180,10 @@ export function resolveConfiguredCliInput(
     const keysSection = repoConfig.keys;
     if (isRecord(keysSection)) {
       keymap = mergeKeymap(keymap, parseKeysConfig(keysSection));
+    }
+    const colorsSection = repoConfig.colors;
+    if (isRecord(colorsSection)) {
+      colorOverrides = { ...colorOverrides, ...parseColorsConfig(colorsSection) };
     }
   }
 
@@ -196,6 +207,7 @@ export function resolveConfiguredCliInput(
       options: resolvedOptions,
     },
     keymap,
+    colorOverrides,
     globalConfigPath: userConfigPath,
     repoConfigPath,
   };

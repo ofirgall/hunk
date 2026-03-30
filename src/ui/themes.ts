@@ -46,6 +46,65 @@ type SyntaxColors = {
   punctuation: string;
 };
 
+/** All AppTheme color keys that users may override via `[colors]` config. */
+export const THEME_COLOR_KEYS = [
+  "background",
+  "panel",
+  "panelAlt",
+  "border",
+  "accent",
+  "accentMuted",
+  "text",
+  "muted",
+  "addedBg",
+  "removedBg",
+  "contextBg",
+  "addedContentBg",
+  "removedContentBg",
+  "contextContentBg",
+  "addedSignColor",
+  "removedSignColor",
+  "lineNumberBg",
+  "lineNumberFg",
+  "selectedHunk",
+  "badgeAdded",
+  "badgeRemoved",
+  "badgeNeutral",
+  "noteBorder",
+  "noteBackground",
+  "noteTitleBackground",
+  "noteTitleText",
+] as const;
+
+export type ThemeColorKey = (typeof THEME_COLOR_KEYS)[number];
+export type ThemeColorOverrides = Partial<Record<ThemeColorKey, string>>;
+
+const VALID_COLOR_KEYS = new Set<string>(THEME_COLOR_KEYS);
+const HEX_COLOR_RE = /^#[0-9a-f]{6}$/i;
+
+/** Parse a `[colors]` config section into validated color overrides. */
+export function parseColorsConfig(source: Record<string, unknown>): ThemeColorOverrides {
+  const result: ThemeColorOverrides = {};
+  for (const [key, value] of Object.entries(source)) {
+    if (!VALID_COLOR_KEYS.has(key)) continue;
+    if (typeof value !== "string" || !HEX_COLOR_RE.test(value)) continue;
+    result[key as ThemeColorKey] = value;
+  }
+  return result;
+}
+
+/** Apply user color overrides on top of a resolved theme, returning a new theme instance. */
+export function applyColorOverrides(theme: AppTheme, overrides: ThemeColorOverrides): AppTheme {
+  if (Object.keys(overrides).length === 0) return theme;
+  const patched = { ...theme };
+  for (const [key, value] of Object.entries(overrides)) {
+    if (value && VALID_COLOR_KEYS.has(key)) {
+      (patched as Record<string, unknown>)[key] = value;
+    }
+  }
+  return patched;
+}
+
 /** Build the syntax palette OpenTUI should use for in-terminal code rendering. */
 function createSyntaxStyle(colors: SyntaxColors) {
   return SyntaxStyle.fromStyles({

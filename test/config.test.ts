@@ -248,4 +248,78 @@ describe("config resolution", () => {
     expect(resolved.keymap.quit).toEqual([{ key: "z" }]);
     expect(resolved.keymap.toggle_help).toEqual([{ key: "h" }]);
   });
+
+  test("returns empty colorOverrides when no [colors] section is present", () => {
+    const cwd = createTempDir("hunk-config-nocolors-");
+    const resolved = resolveConfiguredCliInput(createPatchPagerInput(), {
+      cwd,
+      env: { HOME: createTempDir("hunk-config-home-") },
+    });
+
+    expect(resolved.colorOverrides).toEqual({});
+  });
+
+  test("[colors] section in global config overrides theme colors", () => {
+    const home = createTempDir("hunk-config-home-");
+    mkdirSync(join(home, ".config", "hunk"), { recursive: true });
+    writeFileSync(
+      join(home, ".config", "hunk", "config.toml"),
+      ["[colors]", 'addedContentBg = "#2a5a2a"', 'removedContentBg = "#5a2a2a"'].join("\n"),
+    );
+
+    const resolved = resolveConfiguredCliInput(createPatchPagerInput(), {
+      cwd: createTempDir("hunk-config-cwd-"),
+      env: { HOME: home },
+    });
+
+    expect(resolved.colorOverrides.addedContentBg).toBe("#2a5a2a");
+    expect(resolved.colorOverrides.removedContentBg).toBe("#5a2a2a");
+    expect(resolved.colorOverrides.background).toBeUndefined();
+  });
+
+  test("[colors] ignores invalid hex values and unknown keys", () => {
+    const home = createTempDir("hunk-config-home-");
+    mkdirSync(join(home, ".config", "hunk"), { recursive: true });
+    writeFileSync(
+      join(home, ".config", "hunk", "config.toml"),
+      ["[colors]", 'addedBg = "not-a-color"', 'unknownKey = "#ff0000"', 'text = "#abcdef"'].join(
+        "\n",
+      ),
+    );
+
+    const resolved = resolveConfiguredCliInput(createPatchPagerInput(), {
+      cwd: createTempDir("hunk-config-cwd-"),
+      env: { HOME: home },
+    });
+
+    expect(resolved.colorOverrides.addedBg).toBeUndefined();
+    expect(resolved.colorOverrides.text).toBe("#abcdef");
+    expect(Object.keys(resolved.colorOverrides)).toEqual(["text"]);
+  });
+
+  test("repo [colors] overrides global [colors] per-key", () => {
+    const home = createTempDir("hunk-config-home-");
+    const repo = createTempDir("hunk-config-repo-");
+    createRepo(repo);
+
+    mkdirSync(join(home, ".config", "hunk"), { recursive: true });
+    writeFileSync(
+      join(home, ".config", "hunk", "config.toml"),
+      ["[colors]", 'addedContentBg = "#111111"', 'removedContentBg = "#222222"'].join("\n"),
+    );
+
+    mkdirSync(join(repo, ".hunk"), { recursive: true });
+    writeFileSync(
+      join(repo, ".hunk", "config.toml"),
+      ["[colors]", 'addedContentBg = "#333333"'].join("\n"),
+    );
+
+    const resolved = resolveConfiguredCliInput(createPatchPagerInput(), {
+      cwd: repo,
+      env: { HOME: home },
+    });
+
+    expect(resolved.colorOverrides.addedContentBg).toBe("#333333");
+    expect(resolved.colorOverrides.removedContentBg).toBe("#222222");
+  });
 });
