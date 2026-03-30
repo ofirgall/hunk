@@ -98,7 +98,7 @@ You can persist preferences to a config file:
 - `~/.config/hunk/config.toml`
 - `.hunk/config.toml`
 
-Example:
+Example with all defaults:
 
 ```toml
 theme = "graphite"   # graphite, midnight, paper, ember
@@ -106,10 +106,72 @@ mode = "auto"        # auto, split, stack
 exclude_untracked = false
 line_numbers = true
 wrap_lines = false
+hunk_headers = true
 agent_notes = false
+
+[keys]
+quit = ["q", "escape"]
+page_down = ["space", "f", "pagedown"]
+page_up = ["b", "pageup", "shift+space"]
+half_page_down = "d"
+half_page_up = "u"
+scroll_down = ["down", "j"]
+scroll_up = ["up", "k"]
+scroll_top = "home"
+scroll_bottom = "end"
+prev_hunk = "["
+next_hunk = "]"
+prev_comment = "{"
+next_comment = "}"
+split_layout = "1"
+stack_layout = "2"
+auto_layout = "0"
+toggle_sidebar = "s"
+cycle_theme = "t"
+toggle_agent_notes = "a"
+toggle_line_numbers = "l"
+toggle_wrap = "w"
+toggle_hunk_headers = "m"
+toggle_help = "?"
+focus_filter = "/"
+toggle_focus = "tab"
+open_menu = "f10"
+refresh = "r"
+
+# Color overrides apply on top of the active theme.
+# Values must be 6-digit hex colors. Shown below are the Graphite defaults.
+[colors]
+background = "#111315"
+panel = "#171a1d"
+panelAlt = "#1d2126"
+border = "#343c45"
+accent = "#d5e0ea"
+accentMuted = "#414a54"
+text = "#f2f4f6"
+muted = "#9aa4af"
+addedBg = "#1f3025"
+removedBg = "#372526"
+contextBg = "#181c20"
+addedContentBg = "#24362a"       # inline word-diff emphasis for additions
+removedContentBg = "#432b2d"     # inline word-diff emphasis for deletions
+contextContentBg = "#1e2328"
+addedSignColor = "#88d39b"
+removedSignColor = "#f0a0a0"
+lineNumberBg = "#14181b"
+lineNumberFg = "#798592"
+selectedHunk = "#3b434b"
+badgeAdded = "#88d39b"
+badgeRemoved = "#f0a0a0"
+badgeNeutral = "#a9b4bf"
+noteBorder = "#c6a0ff"
+noteBackground = "#241c31"
+noteTitleBackground = "#322446"
+noteTitleText = "#f5edff"
 ```
 
 `exclude_untracked` affects working-tree `hunk diff` sessions only.
+
+Key bindings support modifier syntax (`shift+g`, `ctrl+c`, `alt+m`). Repo-level `.hunk/config.toml` overrides global settings per-key.
 
 ### Git integration
 
