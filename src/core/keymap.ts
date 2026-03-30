@@ -65,7 +65,7 @@ export function parseKeyDescriptor(raw: string): KeyDescriptor {
   for (const mod of parts) {
     if (mod === "shift") descriptor.shift = true;
     else if (mod === "ctrl") descriptor.ctrl = true;
-    else if (mod === "meta") descriptor.meta = true;
+    else if (mod === "meta" || mod === "alt") descriptor.meta = true;
   }
 
   return descriptor;
@@ -110,12 +110,34 @@ export const DEFAULT_KEYMAP: Keymap = {
 /** Check whether a key event matches a single descriptor. */
 function matchDescriptor(key: KeyLike, desc: KeyDescriptor): boolean {
   const isSpace = desc.key === "space";
-  const baseMatch = isSpace
-    ? key.name === "space" || key.name === " " || key.sequence === " "
-    : key.name === desc.key || key.sequence === desc.key;
+  const isSingleLetter = !isSpace && desc.key.length === 1 && /^[a-z]$/i.test(desc.key);
+
+  let baseMatch: boolean;
+  if (isSpace) {
+    baseMatch = key.name === "space" || key.name === " " || key.sequence === " ";
+  } else if (isSingleLetter && desc.shift) {
+    // Terminals emit uppercase for shift+letter without a reliable shift
+    // flag.  Accept the uppercase char directly, or lowercase with shift.
+    const upper = desc.key.toUpperCase();
+    const lower = desc.key.toLowerCase();
+    const matchesUpper = key.name === upper || key.sequence === upper;
+    const matchesLowerWithShift = !!key.shift && (key.name === lower || key.sequence === lower);
+    baseMatch = matchesUpper || matchesLowerWithShift;
+  } else if (isSingleLetter && !desc.shift) {
+    // Plain letter without shift: reject if the event carries a shift flag
+    // or the reported name/sequence is uppercase, so "g" won't steal "G".
+    if (key.shift) return false;
+    const lower = desc.key.toLowerCase();
+    const upper = desc.key.toUpperCase();
+    const nameIsUpper = key.name === upper || key.sequence === upper;
+    if (nameIsUpper && upper !== lower) return false;
+    baseMatch = key.name === lower || key.sequence === lower;
+  } else {
+    baseMatch = key.name === desc.key || key.sequence === desc.key;
+  }
 
   if (!baseMatch) return false;
-  if (desc.shift && !key.shift) return false;
+  if (desc.shift && !isSingleLetter && !key.shift) return false;
   if (desc.ctrl && !key.ctrl) return false;
   if (desc.meta && !key.meta) return false;
 
