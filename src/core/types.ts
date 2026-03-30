@@ -1,4 +1,5 @@
 import type { FileDiffMetadata } from "@pierre/diffs";
+import type { Keymap } from "./keymap";
 
 export type LayoutMode = "auto" | "split" | "stack";
 
@@ -238,6 +239,7 @@ export type ParsedCliInput =
 export interface AppBootstrap {
   input: CliInput;
   changeset: Changeset;
+  keymap?: Keymap;
   initialMode: LayoutMode;
   initialTheme?: string;
   initialShowLineNumbers?: boolean;

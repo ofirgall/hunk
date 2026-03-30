@@ -118,6 +118,7 @@ export async function prepareStartupPlan(
   }
 
   const bootstrap = await loadAppBootstrapImpl(cliInput);
+  bootstrap.keymap = configured.keymap;
   const controllingTerminal = usesPipedPatchInputImpl(cliInput)
     ? openControllingTerminalImpl()
     : null;

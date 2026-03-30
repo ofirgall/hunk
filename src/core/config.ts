@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import { dirname, join, resolve } from "node:path";
+import { type Keymap, DEFAULT_KEYMAP, mergeKeymap, parseKeysConfig } from "./keymap";
 import type { CliInput, CommonOptions, LayoutMode, PersistedViewPreferences } from "./types";
 
 const DEFAULT_VIEW_PREFERENCES: PersistedViewPreferences = {
@@ -17,6 +18,7 @@ interface ConfigResolutionOptions {
 
 interface HunkConfigResolution {
   input: CliInput;
+  keymap: Keymap;
   globalConfigPath?: string;
   repoConfigPath?: string;
 }
@@ -154,18 +156,24 @@ export function resolveConfiguredCliInput(
     agentNotes: DEFAULT_VIEW_PREFERENCES.showAgentNotes,
   };
 
+  let keymap: Keymap = DEFAULT_KEYMAP;
+
   if (userConfigPath) {
-    resolvedOptions = mergeOptions(
-      resolvedOptions,
-      resolveConfigLayer(readTomlRecord(userConfigPath), input),
-    );
+    const globalConfig = readTomlRecord(userConfigPath);
+    resolvedOptions = mergeOptions(resolvedOptions, resolveConfigLayer(globalConfig, input));
+    const keysSection = globalConfig.keys;
+    if (isRecord(keysSection)) {
+      keymap = mergeKeymap(keymap, parseKeysConfig(keysSection));
+    }
   }
 
   if (repoConfigPath) {
-    resolvedOptions = mergeOptions(
-      resolvedOptions,
-      resolveConfigLayer(readTomlRecord(repoConfigPath), input),
-    );
+    const repoConfig = readTomlRecord(repoConfigPath);
+    resolvedOptions = mergeOptions(resolvedOptions, resolveConfigLayer(repoConfig, input));
+    const keysSection = repoConfig.keys;
+    if (isRecord(keysSection)) {
+      keymap = mergeKeymap(keymap, parseKeysConfig(keysSection));
+    }
   }
 
   resolvedOptions = mergeOptions(resolvedOptions, input.options);
@@ -187,6 +195,7 @@ export function resolveConfiguredCliInput(
       ...input,
       options: resolvedOptions,
     },
+    keymap,
     globalConfigPath: userConfigPath,
     repoConfigPath,
   };

@@ -1016,9 +1016,8 @@ describe("UI components", () => {
       "[Esc]",
       "Navigation",
       "↑ / ↓           move line-by-line",
-      "Space / f       page down (alt: f)",
-      "b               page up",
-      "Shift+Space     page up (alt)",
+      "Space / f       page down",
+      "b / PgUp        page up",
       "d / u           half page down / up",
       "[ / ]           previous / next hunk",
       "{ / }           previous / next comment",
@@ -1032,7 +1031,7 @@ describe("UI components", () => {
       "/               focus file filter",
       "Tab             toggle files/filter focus",
       "F10             open menus",
-      "r / q           reload / quit",
+      "r / q / Esc     reload / quit",
     ] as const;
 
     for (const expectedRow of expectedRows) {

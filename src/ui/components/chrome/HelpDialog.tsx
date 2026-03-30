@@ -1,3 +1,9 @@
+import {
+  DEFAULT_KEYMAP,
+  formatActionKeys,
+  formatFirstKeys,
+  type Keymap,
+} from "../../../core/keymap";
 import { fitText, padText } from "../../lib/text";
 import type { AppTheme } from "../../themes";
 import { ModalFrame } from "./ModalFrame";
@@ -5,47 +11,59 @@ import { ModalFrame } from "./ModalFrame";
 /** Render the keyboard help modal. */
 export function HelpDialog({
   canRefresh = false,
+  keymap = DEFAULT_KEYMAP,
   terminalHeight,
   terminalWidth,
   theme,
   onClose,
 }: {
   canRefresh?: boolean;
+  keymap?: Keymap;
   terminalHeight: number;
   terminalWidth: number;
   theme: AppTheme;
   onClose: () => void;
 }) {
+  const k = (action: Parameters<typeof formatActionKeys>[0]) => formatActionKeys(action, keymap, 2);
+
   const sections = [
     {
       title: "Navigation",
       items: [
-        ["↑ / ↓", "move line-by-line"],
-        ["Space / f", "page down (alt: f)"],
-        ["b", "page up"],
-        ["Shift+Space", "page up (alt)"],
-        ["d / u", "half page down / up"],
-        ["[ / ]", "previous / next hunk"],
-        ["{ / }", "previous / next comment"],
-        ["Home / End", "jump to top / bottom"],
+        [formatFirstKeys(keymap, "scroll_up", "scroll_down"), "move line-by-line"],
+        [k("page_down"), "page down"],
+        [k("page_up"), "page up"],
+        [formatFirstKeys(keymap, "half_page_down", "half_page_up"), "half page down / up"],
+        [formatFirstKeys(keymap, "prev_hunk", "next_hunk"), "previous / next hunk"],
+        [formatFirstKeys(keymap, "prev_comment", "next_comment"), "previous / next comment"],
+        [formatFirstKeys(keymap, "scroll_top", "scroll_bottom"), "jump to top / bottom"],
       ],
     },
     {
       title: "View",
       items: [
-        ["1 / 2 / 0", "split / stack / auto"],
-        ["s / t", "sidebar / theme"],
-        ["a", "toggle AI notes"],
-        ["l / w / m", "lines / wrap / metadata"],
+        [
+          formatFirstKeys(keymap, "split_layout", "stack_layout", "auto_layout"),
+          "split / stack / auto",
+        ],
+        [formatFirstKeys(keymap, "toggle_sidebar", "cycle_theme"), "sidebar / theme"],
+        [k("toggle_agent_notes"), "toggle AI notes"],
+        [
+          formatFirstKeys(keymap, "toggle_line_numbers", "toggle_wrap", "toggle_hunk_headers"),
+          "lines / wrap / metadata",
+        ],
       ],
     },
     {
       title: "Review",
       items: [
-        ["/", "focus file filter"],
-        ["Tab", "toggle files/filter focus"],
-        ["F10", "open menus"],
-        [canRefresh ? "r / q" : "q", canRefresh ? "reload / quit" : "quit"],
+        [k("focus_filter"), "focus file filter"],
+        [k("toggle_focus"), "toggle files/filter focus"],
+        [k("open_menu"), "open menus"],
+        [
+          canRefresh ? `${k("refresh")} / ${k("quit")}` : k("quit"),
+          canRefresh ? "reload / quit" : "quit",
+        ],
       ],
     },
   ] as const;

@@ -3,6 +3,7 @@ import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import type { CliInput } from "../src/core/types";
+import { DEFAULT_KEYMAP } from "../src/core/keymap";
 import { resolveConfiguredCliInput } from "../src/core/config";
 import { loadAppBootstrap } from "../src/core/loaders";
 
@@ -195,5 +196,56 @@ describe("config resolution", () => {
     expect(bootstrap.initialWrapLines).toBe(true);
     expect(bootstrap.initialShowHunkHeaders).toBe(false);
     expect(bootstrap.initialShowAgentNotes).toBe(true);
+  });
+
+  test("returns DEFAULT_KEYMAP when no [keys] section is present", () => {
+    const cwd = createTempDir("hunk-config-nokeys-");
+    const resolved = resolveConfiguredCliInput(createPatchPagerInput(), {
+      cwd,
+      env: { HOME: createTempDir("hunk-config-home-") },
+    });
+
+    expect(resolved.keymap).toEqual(DEFAULT_KEYMAP);
+  });
+
+  test("[keys] section in global config overrides specific actions", () => {
+    const home = createTempDir("hunk-config-home-");
+    mkdirSync(join(home, ".config", "hunk"), { recursive: true });
+    writeFileSync(
+      join(home, ".config", "hunk", "config.toml"),
+      ["[keys]", 'quit = "x"', 'page_down = ["space", "pagedown"]'].join("\n"),
+    );
+
+    const resolved = resolveConfiguredCliInput(createPatchPagerInput(), {
+      cwd: createTempDir("hunk-config-cwd-"),
+      env: { HOME: home },
+    });
+
+    expect(resolved.keymap.quit).toEqual([{ key: "x" }]);
+    expect(resolved.keymap.page_down).toEqual([{ key: "space" }, { key: "pagedown" }]);
+    expect(resolved.keymap.page_up).toEqual(DEFAULT_KEYMAP.page_up);
+  });
+
+  test("repo [keys] overrides global [keys] per-action", () => {
+    const home = createTempDir("hunk-config-home-");
+    const repo = createTempDir("hunk-config-repo-");
+    createRepo(repo);
+
+    mkdirSync(join(home, ".config", "hunk"), { recursive: true });
+    writeFileSync(
+      join(home, ".config", "hunk", "config.toml"),
+      ["[keys]", 'quit = "x"', 'toggle_help = "h"'].join("\n"),
+    );
+
+    mkdirSync(join(repo, ".hunk"), { recursive: true });
+    writeFileSync(join(repo, ".hunk", "config.toml"), ["[keys]", 'quit = "z"'].join("\n"));
+
+    const resolved = resolveConfiguredCliInput(createPatchPagerInput(), {
+      cwd: repo,
+      env: { HOME: home },
+    });
+
+    expect(resolved.keymap.quit).toEqual([{ key: "z" }]);
+    expect(resolved.keymap.toggle_help).toEqual([{ key: "h" }]);
   });
 });

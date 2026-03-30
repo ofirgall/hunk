@@ -17,6 +17,7 @@ import {
   useRef,
 } from "react";
 import { resolveConfiguredCliInput } from "../core/config";
+import { DEFAULT_KEYMAP, matchesAction, type KeyAction } from "../core/keymap";
 import { loadAppBootstrap } from "../core/loaders";
 import { resolveRuntimeCliInput } from "../core/terminal";
 import type { AppBootstrap, CliInput, LayoutMode } from "../core/types";
@@ -134,6 +135,7 @@ function AppShell({
   const deferredFilter = useDeferredValue(filter);
 
   const pagerMode = Boolean(bootstrap.input.options.pager);
+  const keymap = bootstrap.keymap ?? DEFAULT_KEYMAP;
   const activeTheme = resolveTheme(themeId, renderer.themeMode);
 
   const jumpToFile = useCallback((fileId: string, nextHunkIndex = 0) => {
@@ -609,90 +611,61 @@ function AppShell({
   const diffSeparatorWidth = Math.max(4, diffContentWidth - 2);
 
   useKeyboard((key: KeyEvent) => {
-    const pageDownKey =
-      key.name === "pagedown" ||
-      key.name === "space" ||
-      key.name === " " ||
-      key.sequence === " " ||
-      key.name === "f" ||
-      key.sequence === "f";
-    const pageUpKey = key.name === "pageup" || key.name === "b" || key.sequence === "b";
-    const stepDownKey = key.name === "down" || key.name === "j" || key.sequence === "j";
-    const stepUpKey = key.name === "up" || key.name === "k" || key.sequence === "k";
+    const m = (action: KeyAction) => matchesAction(key, action, keymap);
 
-    // New shortcuts from issue #101 - using less/git diff conventions
-    const halfPageDownKey = key.name === "d" || key.sequence === "d";
-    const halfPageUpKey = key.name === "u" || key.sequence === "u";
-    const shiftSpacePageUpKey =
-      key.shift && (key.name === "space" || key.name === " " || key.sequence === " ");
-
-    if (key.name === "f10") {
-      if (pagerMode) {
-        return;
-      }
-
-      if (activeMenuId) {
-        closeMenu();
-      } else {
-        openMenu("file");
-      }
+    if (m("open_menu")) {
+      if (pagerMode) return;
+      if (activeMenuId) closeMenu();
+      else openMenu("file");
       return;
     }
 
+    // Pager mode: reduced action set (scroll, wrap, quit).
     if (pagerMode) {
-      if (key.name === "q" || key.name === "escape") {
+      if (m("quit")) {
         requestQuit();
         return;
       }
-
-      if (pageDownKey) {
+      if (m("page_down")) {
         scrollDiff(1, "viewport");
         return;
       }
-
-      if (pageUpKey || shiftSpacePageUpKey) {
+      if (m("page_up")) {
         scrollDiff(-1, "viewport");
         return;
       }
-
-      if (halfPageDownKey) {
+      if (m("half_page_down")) {
         scrollDiff(1, "half");
         return;
       }
-
-      if (halfPageUpKey) {
+      if (m("half_page_up")) {
         scrollDiff(-1, "half");
         return;
       }
-
-      if (stepDownKey) {
+      if (m("scroll_down")) {
         scrollDiff(1, "step");
         return;
       }
-
-      if (stepUpKey) {
+      if (m("scroll_up")) {
         scrollDiff(-1, "step");
         return;
       }
-
-      if (key.name === "home") {
+      if (m("scroll_top")) {
         scrollDiff(-1, "content");
         return;
       }
-
-      if (key.name === "end") {
+      if (m("scroll_bottom")) {
         scrollDiff(1, "content");
         return;
       }
-
-      if (key.name === "w" || key.sequence === "w") {
+      if (m("toggle_wrap")) {
         toggleLineWrap();
         return;
       }
-
       return;
     }
 
+    // Escape closes contextual overlays before reaching action dispatch.
     if (showHelp && key.name === "escape") {
       setShowHelp(false);
       return;
@@ -703,27 +676,22 @@ function AppShell({
         closeMenu();
         return;
       }
-
       if (key.name === "left") {
         switchMenu(-1);
         return;
       }
-
       if (key.name === "right" || key.name === "tab") {
         switchMenu(1);
         return;
       }
-
       if (key.name === "up") {
         moveMenuItem(-1);
         return;
       }
-
       if (key.name === "down") {
         moveMenuItem(1);
         return;
       }
-
       if (key.name === "return" || key.name === "enter") {
         activateCurrentMenuItem();
         return;
@@ -736,117 +704,95 @@ function AppShell({
           setFilter("");
           return;
         }
-
         setFocusArea("files");
         return;
       }
-
       if (key.name === "tab") {
         toggleFocusArea();
         return;
       }
-
-      // Let the input widget own typing while the filter is focused.
       return;
     }
 
-    if (key.name === "q") {
+    // Top-level keymap-driven actions.
+    if (m("quit")) {
       requestQuit();
       return;
     }
-
-    if (key.name === "?") {
+    if (m("toggle_help")) {
       setShowHelp((current) => !current);
       closeMenu();
       return;
     }
-
-    if (key.name === "escape") {
-      requestQuit();
-      return;
-    }
-
-    if (key.name === "tab") {
+    if (m("toggle_focus")) {
       toggleFocusArea();
       return;
     }
-
-    if (key.name === "/") {
+    if (m("focus_filter")) {
       setFocusArea("filter");
       return;
     }
-
-    if (pageDownKey) {
+    if (m("page_down")) {
       scrollDiff(1, "viewport");
       return;
     }
-
-    if (pageUpKey || shiftSpacePageUpKey) {
+    if (m("page_up")) {
       scrollDiff(-1, "viewport");
       return;
     }
-
-    if (halfPageDownKey) {
+    if (m("half_page_down")) {
       scrollDiff(1, "half");
       return;
     }
-
-    if (halfPageUpKey) {
+    if (m("half_page_up")) {
       scrollDiff(-1, "half");
       return;
     }
-
-    if (key.name === "home") {
+    if (m("scroll_top")) {
       scrollDiff(-1, "content");
       return;
     }
-
-    if (key.name === "end") {
+    if (m("scroll_bottom")) {
       scrollDiff(1, "content");
       return;
     }
-
-    if (key.name === "up") {
+    if (m("scroll_up")) {
       scrollDiff(-1, "step");
       return;
     }
-
-    if (key.name === "down") {
+    if (m("scroll_down")) {
       scrollDiff(1, "step");
       return;
     }
 
-    if (key.name === "1") {
+    if (m("split_layout")) {
       setLayoutMode("split");
       closeMenu();
       return;
     }
-
-    if (key.name === "2") {
+    if (m("stack_layout")) {
       setLayoutMode("stack");
       closeMenu();
       return;
     }
-
-    if (key.name === "0") {
+    if (m("auto_layout")) {
       setLayoutMode("auto");
       closeMenu();
       return;
     }
-
-    if (key.name === "s") {
+    if (m("toggle_sidebar")) {
       toggleSidebar();
       closeMenu();
       return;
     }
 
-    if ((key.name === "r" || key.sequence === "r") && canRefreshCurrentInput) {
+    if (m("refresh") && canRefreshCurrentInput) {
       triggerRefreshCurrentInput();
       closeMenu();
       return;
     }
 
-    if (key.name === "t") {
+    if (m("cycle_theme")) {
       const currentIndex = THEMES.findIndex((theme) => theme.id === activeTheme.id);
       const nextIndex = (currentIndex + 1) % THEMES.length;
       setThemeId(THEMES[nextIndex]!.id);
@@ -854,49 +800,42 @@ function AppShell({
       return;
     }
 
-    if (key.name === "a") {
+    if (m("toggle_agent_notes")) {
       toggleAgentNotes();
       closeMenu();
       return;
     }
-
-    if (key.name === "l" || key.sequence === "l") {
+    if (m("toggle_line_numbers")) {
       toggleLineNumbers();
       closeMenu();
       return;
     }
-
-    if (key.name === "w" || key.sequence === "w") {
+    if (m("toggle_wrap")) {
       toggleLineWrap();
       closeMenu();
       return;
     }
-
-    if (key.name === "m" || key.sequence === "m") {
+    if (m("toggle_hunk_headers")) {
       toggleHunkHeaders();
       closeMenu();
       return;
     }
-
-    if (key.name === "[") {
+    if (m("prev_hunk")) {
       moveHunk(-1);
       closeMenu();
       return;
     }
-
-    if (key.name === "]") {
+    if (m("next_hunk")) {
       moveHunk(1);
       closeMenu();
       return;
     }
-
-    if (key.sequence === "{") {
+    if (m("prev_comment")) {
       moveAnnotatedHunk(-1);
       closeMenu();
       return;
     }
-
-    if (key.sequence === "}") {
+    if (m("next_comment")) {
       moveAnnotatedHunk(1);
       closeMenu();
       return;
@@ -1034,6 +973,7 @@ function AppShell({
         <Suspense fallback={null}>
           <LazyHelpDialog
             canRefresh={canRefreshCurrentInput}
+            keymap={keymap}
             terminalHeight={terminal.height}
             terminalWidth={terminal.width}
             theme={activeTheme}
@@ -1067,12 +1007,13 @@ export function App({
   const reloadSession = useCallback(
     async (nextInput: CliInput, options?: { resetShell?: boolean; sourcePath?: string }) => {
       const runtimeInput = resolveRuntimeCliInput(nextInput);
-      const configuredInput = resolveConfiguredCliInput(runtimeInput, {
-        cwd: options?.sourcePath,
-      }).input;
-      const nextBootstrap = await loadAppBootstrap(configuredInput, {
+      const configured = resolveConfiguredCliInput(runtimeInput, {
         cwd: options?.sourcePath,
       });
+      const nextBootstrap = await loadAppBootstrap(configured.input, {
+        cwd: options?.sourcePath,
+      });
+      nextBootstrap.keymap = configured.keymap;
       const nextSnapshot = createInitialSessionSnapshot(nextBootstrap);
 
       let sessionId = "local-session";
